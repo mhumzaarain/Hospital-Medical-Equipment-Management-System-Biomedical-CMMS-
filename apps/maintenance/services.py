@@ -1,13 +1,15 @@
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
 
 from apps.core import audit
 from apps.core.exceptions import ComplaintNotAllowed, WorkOrderStateError
 from apps.equipment.models import EquipmentStatus
-from apps.equipment.services import _require_engineer_or_admin
+from apps.equipment.services import _require_engineer_or_admin, transition_status
 
 from .models import (
     ACTIVE_WORKORDER_STATUSES, CloseReason, Complaint, ComplaintStatus,
+    FaultCategory, Remark, RemarkKind, WorkOrder, WorkOrderOutcome,
     WorkOrderStatus,
 )
 
@@ -63,3 +65,116 @@ def close_complaint(complaint, actor, close_reason,
                  {"reason": close_reason, "duplicate_of":
                   duplicate_of.pk if duplicate_of else None, "note": close_note})
     return complaint
+
+
+@transaction.atomic
+def open_work_order(equipment, actor) -> WorkOrder:
+    _require_engineer_or_admin(actor)
+    if equipment.status == EquipmentStatus.CONDEMNED:
+        raise WorkOrderStateError("Cannot open a work order for condemned equipment.")
+    if equipment.work_orders.filter(status__in=ACTIVE_WORKORDER_STATUSES).exists():
+        raise WorkOrderStateError("This equipment already has an active work order.")
+    wo = WorkOrder.objects.create(equipment=equipment, opened_by=actor)
+    for complaint in equipment.complaints.filter(status=ComplaintStatus.OPEN):
+        complaint.status = ComplaintStatus.ATTACHED
+        complaint.work_order = wo
+        complaint.save(update_fields=["status", "work_order"])
+    audit.record(actor, "workorder.opened", wo,
+                 {"equipment": equipment.serial_number})
+    return wo
+
+
+@transaction.atomic
+def start_repair(work_order, actor) -> WorkOrder:
+    _require_engineer_or_admin(actor)
+    if work_order.status != WorkOrderStatus.OPEN:
+        raise WorkOrderStateError("Only an open work order can be started.")
+    work_order.status = WorkOrderStatus.IN_PROGRESS
+    work_order.repair_started_at = timezone.now()
+    work_order.save(update_fields=["status", "repair_started_at"])
+    work_order.participants.add(actor)
+    transition_status(
+        work_order.equipment, EquipmentStatus.IN_REPAIR, actor,
+        remark=f"Repair started (WO #{work_order.pk})", work_order=work_order,
+    )
+    audit.record(actor, "workorder.started", work_order, {})
+    return work_order
+
+
+@transaction.atomic
+def complete_work_order(work_order, actor, fault_category,
+                        participants=(), remark="") -> WorkOrder:
+    _require_engineer_or_admin(actor)
+    if work_order.status != WorkOrderStatus.IN_PROGRESS:
+        raise WorkOrderStateError("Only an in-progress work order can be completed.")
+    if fault_category not in FaultCategory.values:
+        raise ValueError("A valid fault_category is required to complete a repair.")
+    now = timezone.now()
+    work_order.status = WorkOrderStatus.COMPLETED
+    work_order.outcome = WorkOrderOutcome.REPAIRED
+    work_order.fault_category = fault_category
+    work_order.repair_completed_at = now
+    work_order.closed_by = actor
+    work_order.closed_at = now
+    work_order.save(update_fields=[
+        "status", "outcome", "fault_category", "repair_completed_at",
+        "closed_by", "closed_at",
+    ])
+    work_order.participants.add(actor, *participants)
+    if remark:
+        Remark.objects.create(work_order=work_order, author=actor, text=remark)
+    transition_status(
+        work_order.equipment, EquipmentStatus.WORKING, actor,
+        remark=f"Repair completed (WO #{work_order.pk})", work_order=work_order,
+    )
+    for complaint in work_order.complaints.exclude(status=ComplaintStatus.CLOSED):
+        close_complaint(complaint, actor, CloseReason.RESOLVED,
+                        close_note=f"Resolved by Work Order #{work_order.pk}")
+    audit.record(actor, "workorder.completed", work_order,
+                 {"fault_category": fault_category})
+    return work_order
+
+
+@transaction.atomic
+def cancel_work_order(work_order, actor, note="") -> WorkOrder:
+    _require_engineer_or_admin(actor)
+    if not work_order.is_active:
+        raise WorkOrderStateError("Only an active work order can be cancelled.")
+    was_in_progress = work_order.status == WorkOrderStatus.IN_PROGRESS
+    now = timezone.now()
+    work_order.status = WorkOrderStatus.CANCELLED
+    work_order.closed_by = actor
+    work_order.closed_at = now
+    work_order.save(update_fields=["status", "closed_by", "closed_at"])
+    Remark.objects.create(
+        work_order=work_order, author=actor, kind=RemarkKind.SYSTEM,
+        text=f"Work order cancelled. {note}".strip(),
+    )
+    if was_in_progress:
+        transition_status(
+            work_order.equipment, EquipmentStatus.WORKING, actor,
+            remark=f"Repair cancelled (WO #{work_order.pk})", work_order=work_order,
+        )
+    for complaint in work_order.complaints.exclude(status=ComplaintStatus.CLOSED):
+        close_complaint(complaint, actor, CloseReason.NO_FAULT,
+                        close_note=note or "No fault found.")
+    audit.record(actor, "workorder.cancelled", work_order, {"note": note})
+    return work_order
+
+
+def add_remark(work_order, author, text, kind=RemarkKind.NOTE) -> Remark:
+    _require_engineer_or_admin(author)
+    remark = Remark.objects.create(
+        work_order=work_order, author=author, text=text, kind=kind
+    )
+    audit.record(author, "workorder.remark_added", work_order,
+                 {"kind": kind, "text": text})
+    return remark
+
+
+def add_participant(work_order, actor, user) -> None:
+    _require_engineer_or_admin(actor)
+    _require_engineer_or_admin(user)
+    work_order.participants.add(user)
+    audit.record(actor, "workorder.participant_added", work_order,
+                 {"user": user.employee_id})
