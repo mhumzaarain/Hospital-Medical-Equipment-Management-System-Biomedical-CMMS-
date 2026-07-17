@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{% if equipment %}Edit{% else %}Add{% endif %} Equipment{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-xl rounded bg-white p-6 shadow">
+  <h1 class="mb-4 text-xl font-bold">
+    {% if equipment %}Edit {{ equipment.serial_number }}{% else %}Add Equipment{% endif %}
+  </h1>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% for field in form %}
+    <div>
+      <label class="mb-1 block text-sm font-medium">{{ field.label }}</label>
+      {{ field }}
+      {% if field.help_text %}<p class="text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
+      {% for error in field.errors %}<p class="text-sm text-red-700">{{ error }}</p>{% endfor %}
+    </div>
+    {% endfor %}
+    <button class="rounded bg-sky-800 px-4 py-2 text-white hover:bg-sky-700">Save</button>
+  </form>
+</div>
+{% endblock %}

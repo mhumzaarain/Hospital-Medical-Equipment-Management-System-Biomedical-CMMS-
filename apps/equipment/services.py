@@ -81,3 +81,25 @@ def condemn_equipment(equipment, actor, remark, condemned_location):
     audit.record(actor, "equipment.condemned", equipment,
                  {"remark": remark, "location": condemned_location})
     return equipment
+
+
+def create_equipment(actor, **fields):
+    _require_engineer_or_admin(actor)
+    equipment = Equipment.objects.create(**fields)
+    audit.record(actor, "equipment.created", equipment,
+                 {"serial_number": equipment.serial_number})
+    return equipment
+
+
+def update_equipment(equipment, actor, **fields):
+    _require_engineer_or_admin(actor)
+    changes = {}
+    for name, value in fields.items():
+        old = getattr(equipment, name)
+        if old != value:
+            changes[name] = {"old": str(old), "new": str(value)}
+            setattr(equipment, name, value)
+    if changes:
+        equipment.save(update_fields=list(fields.keys()))
+        audit.record(actor, "equipment.updated", equipment, changes)
+    return equipment

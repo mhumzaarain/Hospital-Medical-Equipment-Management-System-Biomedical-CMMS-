@@ -13,7 +13,8 @@
 <nav class="bg-sky-900 text-white">
   <div class="mx-auto max-w-6xl px-4 py-3 flex items-center gap-6">
     <a href="{% url 'home' %}" class="font-bold">{{ HOSPITAL_NAME }} · CMMS</a>
-    {% if user.is_authenticated %}{# nav links enabled by Tasks 11-13 #}
+    {% if user.is_authenticated %}
+      <a href="{% url 'equipment_list' %}" class="hover:underline">Equipment</a>
       <form method="post" action="{% url 'logout' %}" class="ml-auto">
         {% csrf_token %}
         <button class="text-sky-200 hover:underline">
