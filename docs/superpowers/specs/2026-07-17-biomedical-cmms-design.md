@@ -117,14 +117,23 @@ registry. Hard FK — no free-text device entry. QR-code entry is out of scope
 ### 4.5 maintenance.WorkOrder
 `equipment` FK, `status` (`open` / `in_progress` / `completed` / `cancelled`),
 `opened_by`, `opened_at`, `repair_started_at`, `repair_completed_at`,
-`closed_by`, `closed_at`, `outcome` (`repaired` / `condemned`).
+`closed_by`, `closed_at`, `outcome` (`repaired` / `condemned`),
+`fault_category` (nullable until completion; **required when completing** —
+choices: `electrical` / `battery_power` / `display_monitor` / `mechanical` /
+`calibration` / `software` / `accessory_probe` / `other`).
+
+`fault_category` exists so that "same fault repeating" is a deterministic SQL
+query (`GROUP BY fault_category HAVING COUNT(*) >= 2` over a rolling window)
+instead of an AI guess over free text. The engineer picks it from a dropdown on
+the completion form. Cancelled work orders never get one (false alarm — no fault).
 
 - Complaints attach N:1 to a WorkOrder; a WorkOrder may also exist with zero
   complaints (engineer-initiated, e.g. found during inspection).
 - **At most one non-closed WorkOrder per device** (partial unique index).
 - Starting the repair sets `repair_started_at` and transitions the equipment to
-  `in_repair`. Completing sets `repair_completed_at`, transitions equipment back
-  to `working` (or the condemnation path), and closes attached complaints with
+  `in_repair`. Completing requires a `fault_category`, sets
+  `repair_completed_at`, transitions equipment back to `working` (or the
+  condemnation path), and closes attached complaints with
   `close_reason=resolved` — one transaction.
 - Cancelling (false alarm): attached complaints close with `close_reason=no_fault`; equipment
   returns to / stays `working`.
@@ -191,8 +200,9 @@ distorts a mean into a false story). **No SLA metrics.**
   aggregated per department and per device. A repair spanning a month boundary
   contributes its hours to each month proportionally.
 - **Dashboard (Chart.js):** critical-asset downtime, complaints per department,
-  most-complained devices, repairs completed count, currently open work orders,
-  and repairs carrying `delay` remarks with their reasons.
+  most-complained devices, most common fault categories, repairs completed
+  count, currently open work orders, and repairs carrying `delay` remarks with
+  their reasons.
 - **Monthly management report:** the same aggregates for the month, computed in
   SQL, plus an LLM-written narrative summary; rendered to PDF (WeasyPrint),
   stored on disk, downloadable; generated monthly by schedule and on demand.
@@ -205,7 +215,7 @@ LLM output lands in a nullable field the UI treats as optional enrichment.
 
 | Task | Trigger | Description |
 |---|---|---|
-| `compute_risk_scores` | weekly (periodic) | SQL stats per device (repair frequency, recency, repeat faults) → deterministic score + LLM narrative → `RiskAssessment` row |
+| `compute_risk_scores` | weekly (periodic) | SQL stats per device over a rolling 12-month window (repair frequency, recency, repeat `fault_category` counts) → deterministic score + LLM narrative (which also reads the raw complaint/remark texts for color) → `RiskAssessment` row |
 | `generate_monthly_report` | monthly (periodic) + on-demand | Aggregate month's metrics in SQL → LLM narrative → PDF |
 | `answer_device_chat` | on chat message (Phase 3) | Load the device's **full** complaint/work-order/remark/status history into the prompt (context stuffing — no RAG/embeddings; per-device history is small) → LLM answer; UI polls via HTMX |
 | `nightly_backup` | daily (periodic) | `pg_dump` to a mounted volume; prune old dumps |
