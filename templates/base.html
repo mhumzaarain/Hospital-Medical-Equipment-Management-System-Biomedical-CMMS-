@@ -15,6 +15,11 @@
     <a href="{% url 'home' %}" class="font-bold">{{ HOSPITAL_NAME }} · CMMS</a>
     {% if user.is_authenticated %}
       <a href="{% url 'equipment_list' %}" class="hover:underline">Equipment</a>
+      <a href="{% url 'complaint_new' %}" class="hover:underline">New Complaint</a>
+      <a href="{% url 'my_complaints' %}" class="hover:underline">My Complaints</a>
+      {% if user.is_engineer_or_admin %}
+        <a href="{% url 'complaint_queue' %}" class="hover:underline">Queue</a>
+      {% endif %}
       <form method="post" action="{% url 'logout' %}" class="ml-auto">
         {% csrf_token %}
         <button class="text-sky-200 hover:underline">

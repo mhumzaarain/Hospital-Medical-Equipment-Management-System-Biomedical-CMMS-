@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Complete WO #{{ wo.pk }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-xl rounded bg-white p-6 shadow">
+  <h1 class="mb-4 text-xl font-bold">Complete Work Order #{{ wo.pk }}</h1>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="mb-1 block text-sm font-medium">Fault category (required)</label>
+      {{ form.fault_category }}
+      {% for error in form.fault_category.errors %}
+        <p class="text-sm text-red-700">{{ error }}</p>{% endfor %}
+    </div>
+    <div>
+      <label class="mb-1 block text-sm font-medium">Who worked on this repair?</label>
+      {{ form.participants }}
+      <p class="text-xs text-slate-500">{{ form.participants.help_text }}</p>
+    </div>
+    <div>
+      <label class="mb-1 block text-sm font-medium">Closing remark (optional)</label>
+      {{ form.remark }}
+    </div>
+    <button class="rounded bg-emerald-700 px-4 py-2 text-white hover:bg-emerald-600">
+      Mark repaired &amp; return to service</button>
+  </form>
+</div>
+{% endblock %}
