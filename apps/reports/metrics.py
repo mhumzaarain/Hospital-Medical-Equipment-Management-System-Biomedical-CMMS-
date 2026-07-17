@@ -1,5 +1,6 @@
 """Dashboard/report numbers. Numbers come from SQL/ORM — never from an LLM.
 No MTTR and no SLA metrics anywhere (spec sections 7 and 9)."""
+
 from collections import defaultdict
 
 from django.db.models import Count, Q
@@ -7,7 +8,12 @@ from django.db.models import Count, Q
 from apps.accounts.models import Roles, User
 from apps.equipment.models import Equipment
 from apps.maintenance.models import (
-    CloseReason, Complaint, FaultCategory, Remark, RemarkKind, WorkOrder,
+    CloseReason,
+    Complaint,
+    FaultCategory,
+    Remark,
+    RemarkKind,
+    WorkOrder,
     WorkOrderStatus,
 )
 
@@ -43,7 +49,8 @@ def complaints_per_department(window_start, window_end):
     rows = (
         Complaint.objects.filter(created_at__range=(window_start, window_end))
         .values("equipment__department__name")
-        .annotate(n=Count("id")).order_by("-n")
+        .annotate(n=Count("id"))
+        .order_by("-n")
     )
     return {r["equipment__department__name"]: r["n"] for r in rows}
 
@@ -51,9 +58,13 @@ def complaints_per_department(window_start, window_end):
 def most_complained_devices(window_start, window_end, limit=10):
     rows = (
         Equipment.objects.annotate(
-            n=Count("complaints", filter=Q(
-                complaints__created_at__range=(window_start, window_end)))
-        ).filter(n__gt=0).order_by("-n")[:limit]
+            n=Count(
+                "complaints",
+                filter=Q(complaints__created_at__range=(window_start, window_end)),
+            )
+        )
+        .filter(n__gt=0)
+        .order_by("-n")[:limit]
     )
     return [(f"{eq.name} ({eq.serial_number})", eq.n) for eq in rows]
 
@@ -65,7 +76,10 @@ def fault_category_counts(window_start, window_end):
             status=WorkOrderStatus.COMPLETED,
             repair_completed_at__range=(window_start, window_end),
             fault_category__isnull=False,
-        ).values("fault_category").annotate(n=Count("id")).order_by("-n")
+        )
+        .values("fault_category")
+        .annotate(n=Count("id"))
+        .order_by("-n")
     )
     return {labels[r["fault_category"]]: r["n"] for r in rows}
 
@@ -88,14 +102,19 @@ def delayed_repairs(window_start, window_end):
         Remark.objects.filter(
             kind=RemarkKind.DELAY,
             created_at__range=(window_start, window_end),
-        ).select_related("work_order__equipment").order_by("created_at")
+        )
+        .select_related("work_order__equipment")
+        .order_by("created_at")
     )
     latest = {}
     for remark in delay_remarks:
         latest[remark.work_order_id] = remark
     return [
-        {"wo_id": wo_id, "equipment": str(r.work_order.equipment),
-         "latest_delay_note": r.text}
+        {
+            "wo_id": wo_id,
+            "equipment": str(r.work_order.equipment),
+            "latest_delay_note": r.text,
+        }
         for wo_id, r in latest.items()
     ]
 
@@ -109,8 +128,11 @@ def per_engineer_activity(window_start, window_end):
                 filter=Q(
                     workorders_participated__status=WorkOrderStatus.COMPLETED,
                     workorders_participated__repair_completed_at__range=(
-                        window_start, window_end),
-                ), distinct=True,
+                        window_start,
+                        window_end,
+                    ),
+                ),
+                distinct=True,
             ),
             # annotation must NOT be named "complaints_closed" — that name is
             # taken by the reverse accessor of Complaint.closed_by and Django
@@ -120,13 +142,22 @@ def per_engineer_activity(window_start, window_end):
                 filter=Q(
                     complaints_closed__closed_at__range=(window_start, window_end),
                     complaints_closed__close_reason__in=[
-                        CloseReason.DUPLICATE, CloseReason.NO_FAULT],
-                ), distinct=True,
+                        CloseReason.DUPLICATE,
+                        CloseReason.NO_FAULT,
+                    ],
+                ),
+                distinct=True,
             ),
-        ).order_by("-repairs")
+        )
+        .order_by("-repairs")
     )
     return [
-        {"name": u.get_full_name() or u.username, "employee_id": u.employee_id,
-         "repairs": u.repairs, "complaints_closed": u.closed_count}
-        for u in users if u.repairs or u.closed_count
+        {
+            "name": u.get_full_name() or u.username,
+            "employee_id": u.employee_id,
+            "repairs": u.repairs,
+            "complaints_closed": u.closed_count,
+        }
+        for u in users
+        if u.repairs or u.closed_count
     ]

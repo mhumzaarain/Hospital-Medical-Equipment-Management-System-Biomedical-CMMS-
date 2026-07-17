@@ -24,14 +24,20 @@ def dashboard(request):
         "open_workorders": metrics.open_workorders_count(),
         "delayed": metrics.delayed_repairs(window_start, window_end),
         "engineers": metrics.per_engineer_activity(window_start, window_end),
-        "downtime_json": json.dumps({
-            "labels": list(downtime.keys()),
-            "values": [round(v, 1) for v in downtime.values()]}),
-        "complaints_json": json.dumps({
-            "labels": list(complaints.keys()), "values": list(complaints.values())}),
-        "devices_json": json.dumps({
-            "labels": [d[0] for d in devices], "values": [d[1] for d in devices]}),
-        "faults_json": json.dumps({
-            "labels": list(faults.keys()), "values": list(faults.values())}),
+        "downtime_json": json.dumps(
+            {
+                "labels": list(downtime.keys()),
+                "values": [round(v, 1) for v in downtime.values()],
+            }
+        ),
+        "complaints_json": json.dumps(
+            {"labels": list(complaints.keys()), "values": list(complaints.values())}
+        ),
+        "devices_json": json.dumps(
+            {"labels": [d[0] for d in devices], "values": [d[1] for d in devices]}
+        ),
+        "faults_json": json.dumps(
+            {"labels": list(faults.keys()), "values": list(faults.values())}
+        ),
     }
     return render(request, "reports/dashboard.html", context)

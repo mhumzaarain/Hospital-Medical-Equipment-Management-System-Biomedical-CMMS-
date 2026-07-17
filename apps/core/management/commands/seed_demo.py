@@ -11,7 +11,10 @@ from apps.equipment.models import Department, Equipment, StatusEvent
 from apps.equipment.services import condemn_equipment
 from apps.maintenance.models import Complaint, FaultCategory, WorkOrder
 from apps.maintenance.services import (
-    add_remark, complete_work_order, lodge_complaint, open_work_order,
+    add_remark,
+    complete_work_order,
+    lodge_complaint,
+    open_work_order,
     start_repair,
 )
 
@@ -61,38 +64,70 @@ class Command(BaseCommand):
         User = get_user_model()
         now = timezone.now()
 
-        departments = [Department.objects.create(name=n, location=l) for n, l in [
-            ("ICU", "Block A, Floor 2"), ("Radiology", "Block B, Ground"),
-            ("Emergency", "Block A, Ground"), ("Cardiology", "Block C, Floor 1"),
-            ("Operation Theater", "Block A, Floor 3"),
-        ]]
+        departments = [
+            Department.objects.create(name=n, location=loc)
+            for n, loc in [
+                ("ICU", "Block A, Floor 2"),
+                ("Radiology", "Block B, Ground"),
+                ("Emergency", "Block A, Ground"),
+                ("Cardiology", "Block C, Floor 1"),
+                ("Operation Theater", "Block A, Floor 3"),
+            ]
+        ]
         admin = User.objects.create_user(
-            username="admin", password="demo1234", employee_id="EMP-900",
-            role=Roles.ADMIN, first_name="Ayesha", last_name="Malik",
-            is_staff=True, is_superuser=True)
-        engineers = [User.objects.create_user(
-            username=f"engineer{i}", password="demo1234",
-            employee_id=f"EMP-10{i}", role=Roles.ENGINEER,
-            first_name=f"Engineer{i}", last_name="Demo") for i in range(1, 4)]
-        staff = [User.objects.create_user(
-            username=f"staff{i}", password="demo1234",
-            employee_id=f"EMP-00{i}", role=Roles.STAFF,
-            first_name=f"Staff{i}", last_name="Demo",
-            department=random.choice(departments)) for i in range(1, 11)]
+            username="admin",
+            password="demo1234",
+            employee_id="EMP-900",
+            role=Roles.ADMIN,
+            first_name="Ayesha",
+            last_name="Malik",
+            is_staff=True,
+            is_superuser=True,
+        )
+        engineers = [
+            User.objects.create_user(
+                username=f"engineer{i}",
+                password="demo1234",
+                employee_id=f"EMP-10{i}",
+                role=Roles.ENGINEER,
+                first_name=f"Engineer{i}",
+                last_name="Demo",
+            )
+            for i in range(1, 4)
+        ]
+        staff = [
+            User.objects.create_user(
+                username=f"staff{i}",
+                password="demo1234",
+                employee_id=f"EMP-00{i}",
+                role=Roles.STAFF,
+                first_name=f"Staff{i}",
+                last_name="Demo",
+                department=random.choice(departments),
+            )
+            for i in range(1, 11)
+        ]
 
         devices = []
         serial = 1000
         for name, maker, model, critical in DEVICES:
             for _ in range(random.randint(3, 7)):
                 serial += 1
-                devices.append(Equipment.objects.create(
-                    name=name, manufacturer=maker, vendor="MedServe Ltd",
-                    model_number=model, serial_number=f"SN-{serial}",
-                    department=random.choice(departments),
-                    is_critical_asset=critical,
-                    purchase_date=now.date() - timedelta(days=random.randint(400, 3000)),
-                    installation_date=now.date() - timedelta(days=random.randint(100, 400)),
-                ))
+                devices.append(
+                    Equipment.objects.create(
+                        name=name,
+                        manufacturer=maker,
+                        vendor="MedServe Ltd",
+                        model_number=model,
+                        serial_number=f"SN-{serial}",
+                        department=random.choice(departments),
+                        is_critical_asset=critical,
+                        purchase_date=now.date()
+                        - timedelta(days=random.randint(400, 3000)),
+                        installation_date=now.date()
+                        - timedelta(days=random.randint(100, 400)),
+                    )
+                )
 
         # ~90 days of complaint -> repair history through the real services
         for day_offset in range(90, 0, -2):
@@ -106,8 +141,9 @@ class Command(BaseCommand):
             reporter = random.choice(staff)
             engineer = random.choice(engineers)
             t0 = now - timedelta(days=day_offset, hours=random.randint(0, 8))
-            complaint = lodge_complaint(reporter, device,
-                                        random.choice(COMPLAINT_TEXTS))
+            complaint = lodge_complaint(
+                reporter, device, random.choice(COMPLAINT_TEXTS)
+            )
             backdate(Complaint, complaint.pk, created_at=t0)
             wo = open_work_order(device, engineer)
             backdate(WorkOrder, wo.pk, opened_at=t0 + timedelta(hours=1))
@@ -120,9 +156,11 @@ class Command(BaseCommand):
                 add_remark(wo, engineer, random.choice(DELAY_TEXTS), kind="delay")
             wo.refresh_from_db()
             wo = complete_work_order(
-                wo, engineer,
+                wo,
+                engineer,
                 fault_category=random.choice(FaultCategory.values),
-                remark="Repaired and tested OK.")
+                remark="Repaired and tested OK.",
+            )
             done = started + timedelta(hours=repair_hours)
             backdate(WorkOrder, wo.pk, repair_completed_at=done, closed_at=done)
             # backdate the two status events of this cycle
@@ -138,20 +176,27 @@ class Command(BaseCommand):
             device = random.choice(working_devices)
             device.refresh_from_db()
             if device.status == "working":
-                lodge_complaint(random.choice(staff), device,
-                                random.choice(COMPLAINT_TEXTS))
+                lodge_complaint(
+                    random.choice(staff), device, random.choice(COMPLAINT_TEXTS)
+                )
 
         # two condemned devices
         condemn_pool = [d for d in devices if not d.is_critical_asset]
         for device in random.sample(condemn_pool, min(2, len(condemn_pool))):
             device.refresh_from_db()
             if device.status == "working":
-                condemn_equipment(device, admin,
-                                  remark="Beyond economical repair.",
-                                  condemned_location="Condemned store, basement")
+                condemn_equipment(
+                    device,
+                    admin,
+                    remark="Beyond economical repair.",
+                    condemned_location="Condemned store, basement",
+                )
 
-        self.stdout.write(self.style.SUCCESS(
-            f"Seeded {Equipment.objects.count()} devices, "
-            f"{Complaint.objects.count()} complaints, "
-            f"{WorkOrder.objects.count()} work orders. "
-            "Logins: admin/demo1234, engineer1/demo1234, staff1/demo1234"))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Seeded {Equipment.objects.count()} devices, "
+                f"{Complaint.objects.count()} complaints, "
+                f"{WorkOrder.objects.count()} work orders. "
+                "Logins: admin/demo1234, engineer1/demo1234, staff1/demo1234"
+            )
+        )

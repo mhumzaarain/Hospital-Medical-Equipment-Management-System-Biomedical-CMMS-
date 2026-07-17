@@ -19,7 +19,9 @@ def test_staff_can_lodge_complaint(equipment, staff_user):
     assert AuditLog.objects.filter(verb="complaint.lodged").count() == 1
 
 
-def test_complaint_blocked_when_in_repair(equipment, staff_user, engineer, make_work_order):
+def test_complaint_blocked_when_in_repair(
+    equipment, staff_user, engineer, make_work_order
+):
     wo = make_work_order(status=WorkOrderStatus.IN_PROGRESS)
     transition_status(equipment, EquipmentStatus.IN_REPAIR, engineer, work_order=wo)
     with pytest.raises(ComplaintNotAllowed) as exc:
@@ -33,7 +35,9 @@ def test_complaint_blocked_when_condemned(equipment, staff_user, engineer):
         lodge_complaint(staff_user, equipment, "it is broken")
 
 
-def test_complaint_auto_attaches_to_open_workorder(equipment, staff_user, make_work_order):
+def test_complaint_auto_attaches_to_open_workorder(
+    equipment, staff_user, make_work_order
+):
     wo = make_work_order(status=WorkOrderStatus.OPEN)
     complaint = lodge_complaint(staff_user, equipment, "second report")
     assert complaint.status == ComplaintStatus.ATTACHED
@@ -44,8 +48,11 @@ def test_engineer_closes_duplicate_with_link(equipment, staff_user, engineer):
     first = lodge_complaint(staff_user, equipment, "display broken")
     second = lodge_complaint(staff_user, equipment, "screen not working")
     closed = close_complaint(
-        second, engineer, CloseReason.DUPLICATE,
-        duplicate_of=first, close_note="already reported",
+        second,
+        engineer,
+        CloseReason.DUPLICATE,
+        duplicate_of=first,
+        close_note="already reported",
     )
     assert closed.status == ComplaintStatus.CLOSED
     assert closed.close_reason == CloseReason.DUPLICATE

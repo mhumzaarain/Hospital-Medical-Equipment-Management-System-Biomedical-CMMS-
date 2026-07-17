@@ -1,38 +1,52 @@
 import pytest
 from django.contrib.auth import get_user_model
 
+from apps.equipment.models import Department, Equipment
+from apps.maintenance.models import WorkOrder, WorkOrderStatus
+
 
 @pytest.fixture
 def staff_user(db):
     return get_user_model().objects.create_user(
-        username="nurse", password="pw", employee_id="EMP-001", role="staff",
-        first_name="Nadia", last_name="Khan",
+        username="nurse",
+        password="pw",
+        employee_id="EMP-001",
+        role="staff",
+        first_name="Nadia",
+        last_name="Khan",
     )
 
 
 @pytest.fixture
 def engineer(db):
     return get_user_model().objects.create_user(
-        username="engineer1", password="pw", employee_id="EMP-100", role="engineer",
-        first_name="Bilal", last_name="Ahmed",
+        username="engineer1",
+        password="pw",
+        employee_id="EMP-100",
+        role="engineer",
+        first_name="Bilal",
+        last_name="Ahmed",
     )
 
 
 @pytest.fixture
 def engineer2(db):
     return get_user_model().objects.create_user(
-        username="engineer2", password="pw", employee_id="EMP-101", role="engineer",
+        username="engineer2",
+        password="pw",
+        employee_id="EMP-101",
+        role="engineer",
     )
 
 
 @pytest.fixture
 def admin_user(db):
     return get_user_model().objects.create_user(
-        username="boss", password="pw", employee_id="EMP-900", role="admin",
+        username="boss",
+        password="pw",
+        employee_id="EMP-900",
+        role="admin",
     )
-
-
-from apps.equipment.models import Department, Equipment
 
 
 @pytest.fixture
@@ -49,20 +63,22 @@ def department2(db):
 def make_equipment(department):
     def _make(**overrides):
         fields = dict(
-            name="Ventilator", manufacturer="Hamilton", vendor="MedServe Ltd",
-            model_number="C2", serial_number="SN-0001", department=department,
+            name="Ventilator",
+            manufacturer="Hamilton",
+            vendor="MedServe Ltd",
+            model_number="C2",
+            serial_number="SN-0001",
+            department=department,
         )
         fields.update(overrides)
         return Equipment.objects.create(**fields)
+
     return _make
 
 
 @pytest.fixture
 def equipment(make_equipment):
     return make_equipment()
-
-
-from apps.maintenance.models import WorkOrder, WorkOrderStatus
 
 
 @pytest.fixture
@@ -75,4 +91,5 @@ def make_work_order(equipment, engineer):
         )
         fields.update(overrides)
         return WorkOrder.objects.create(**fields)
+
     return _make

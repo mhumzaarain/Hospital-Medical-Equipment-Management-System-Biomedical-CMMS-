@@ -5,7 +5,14 @@ from .models import Complaint, Remark, WorkOrder
 
 @admin.register(Complaint)
 class ComplaintAdmin(admin.ModelAdmin):
-    list_display = ("id", "equipment", "reporter", "status", "close_reason", "created_at")
+    list_display = (
+        "id",
+        "equipment",
+        "reporter",
+        "status",
+        "close_reason",
+        "created_at",
+    )
     list_filter = ("status", "close_reason")
     readonly_fields = [f.name for f in Complaint._meta.fields]
 
@@ -18,7 +25,14 @@ class ComplaintAdmin(admin.ModelAdmin):
 
 @admin.register(WorkOrder)
 class WorkOrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "equipment", "status", "outcome", "fault_category", "opened_at")
+    list_display = (
+        "id",
+        "equipment",
+        "status",
+        "outcome",
+        "fault_category",
+        "opened_at",
+    )
     list_filter = ("status", "fault_category")
     readonly_fields = [f.name for f in WorkOrder._meta.fields]
 

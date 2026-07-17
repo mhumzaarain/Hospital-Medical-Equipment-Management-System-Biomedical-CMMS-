@@ -10,7 +10,10 @@ from apps.equipment.models import Equipment
 
 from . import services
 from .forms import (
-    CloseComplaintForm, ComplaintForm, CompleteWorkOrderForm, RemarkForm,
+    CloseComplaintForm,
+    ComplaintForm,
+    CompleteWorkOrderForm,
+    RemarkForm,
 )
 from .models import Complaint, ComplaintStatus, WorkOrder
 
@@ -28,45 +31,52 @@ def complaint_new(request):
     if request.method == "POST" and form.is_valid():
         try:
             complaint = services.lodge_complaint(
-                request.user, form.cleaned_data["equipment"],
+                request.user,
+                form.cleaned_data["equipment"],
                 form.cleaned_data["description"],
             )
         except DomainError as exc:
             messages.error(request, str(exc))
             return redirect("complaint_new")
-        messages.success(request,
-                         f"Complaint #{complaint.pk} lodged. Thank you.")
+        messages.success(request, f"Complaint #{complaint.pk} lodged. Thank you.")
         return redirect("my_complaints")
     return render(request, "maintenance/complaint_form.html", {"form": form})
 
 
 @login_required
 def my_complaints(request):
-    complaints = (Complaint.objects.filter(reporter=request.user)
-                  .select_related("equipment", "work_order"))
-    return render(request, "maintenance/my_complaints.html",
-                  {"complaints": complaints})
+    complaints = Complaint.objects.filter(reporter=request.user).select_related(
+        "equipment", "work_order"
+    )
+    return render(request, "maintenance/my_complaints.html", {"complaints": complaints})
 
 
 def _open_complaints_queryset():
-    return (Complaint.objects
-            .filter(status__in=[ComplaintStatus.OPEN, ComplaintStatus.ATTACHED])
-            .select_related("equipment__department", "reporter", "work_order")
-            .order_by("-created_at"))
+    return (
+        Complaint.objects.filter(
+            status__in=[ComplaintStatus.OPEN, ComplaintStatus.ATTACHED]
+        )
+        .select_related("equipment__department", "reporter", "work_order")
+        .order_by("-created_at")
+    )
 
 
 @login_required
 def complaint_queue(request):
     _require_engineer(request.user)
-    return render(request, "maintenance/queue.html",
-                  {"complaints": _open_complaints_queryset()})
+    return render(
+        request, "maintenance/queue.html", {"complaints": _open_complaints_queryset()}
+    )
 
 
 @login_required
 def complaint_queue_rows(request):
     _require_engineer(request.user)
-    return render(request, "maintenance/_queue_rows.html",
-                  {"complaints": _open_complaints_queryset()})
+    return render(
+        request,
+        "maintenance/_queue_rows.html",
+        {"complaints": _open_complaints_queryset()},
+    )
 
 
 @login_required
@@ -77,7 +87,9 @@ def complaint_close(request, pk):
     if request.method == "POST" and form.is_valid():
         try:
             services.close_complaint(
-                complaint, request.user, form.cleaned_data["close_reason"],
+                complaint,
+                request.user,
+                form.cleaned_data["close_reason"],
                 duplicate_of=form.cleaned_data["duplicate_of"],
                 close_note=form.cleaned_data["close_note"],
             )
@@ -86,8 +98,11 @@ def complaint_close(request, pk):
         else:
             messages.success(request, f"Complaint #{complaint.pk} closed.")
         return redirect("complaint_queue")
-    return render(request, "maintenance/complaint_close.html",
-                  {"complaint": complaint, "form": form})
+    return render(
+        request,
+        "maintenance/complaint_close.html",
+        {"complaint": complaint, "form": form},
+    )
 
 
 @login_required
@@ -107,15 +122,20 @@ def workorder_open(request, equipment_pk):
 @login_required
 def workorder_detail(request, pk):
     wo = get_object_or_404(
-        WorkOrder.objects.select_related("equipment__department", "opened_by")
-        .prefetch_related("remarks__author", "participants", "complaints__reporter"),
+        WorkOrder.objects.select_related(
+            "equipment__department", "opened_by"
+        ).prefetch_related("remarks__author", "participants", "complaints__reporter"),
         pk=pk,
     )
-    return render(request, "maintenance/workorder_detail.html", {
-        "wo": wo,
-        "remark_form": RemarkForm(),
-        "can_engineer": request.user.is_engineer_or_admin,
-    })
+    return render(
+        request,
+        "maintenance/workorder_detail.html",
+        {
+            "wo": wo,
+            "remark_form": RemarkForm(),
+            "can_engineer": request.user.is_engineer_or_admin,
+        },
+    )
 
 
 @login_required
@@ -140,7 +160,9 @@ def workorder_complete(request, pk):
     if request.method == "POST" and form.is_valid():
         try:
             services.complete_work_order(
-                wo, request.user, form.cleaned_data["fault_category"],
+                wo,
+                request.user,
+                form.cleaned_data["fault_category"],
                 participants=form.cleaned_data["participants"],
                 remark=form.cleaned_data["remark"],
             )
@@ -150,8 +172,9 @@ def workorder_complete(request, pk):
             messages.success(request, f"WO #{wo.pk} completed. Equipment is Working.")
             return redirect("workorder_detail", pk=pk)
     form.fields["participants"].initial = wo.participants.all()
-    return render(request, "maintenance/workorder_complete.html",
-                  {"wo": wo, "form": form})
+    return render(
+        request, "maintenance/workorder_complete.html", {"wo": wo, "form": form}
+    )
 
 
 @login_required
@@ -160,8 +183,7 @@ def workorder_cancel(request, pk):
     _require_engineer(request.user)
     wo = get_object_or_404(WorkOrder, pk=pk)
     try:
-        services.cancel_work_order(wo, request.user,
-                                   note=request.POST.get("note", ""))
+        services.cancel_work_order(wo, request.user, note=request.POST.get("note", ""))
     except DomainError as exc:
         messages.error(request, str(exc))
     else:
@@ -176,8 +198,9 @@ def workorder_remark(request, pk):
     wo = get_object_or_404(WorkOrder, pk=pk)
     form = RemarkForm(request.POST)
     if form.is_valid():
-        services.add_remark(wo, request.user, form.cleaned_data["text"],
-                            kind=form.cleaned_data["kind"])
+        services.add_remark(
+            wo, request.user, form.cleaned_data["text"], kind=form.cleaned_data["kind"]
+        )
         messages.success(request, "Remark added.")
     return redirect("workorder_detail", pk=pk)
 

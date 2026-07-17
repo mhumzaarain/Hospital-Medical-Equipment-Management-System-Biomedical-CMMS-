@@ -33,7 +33,9 @@ class AppendOnlyModel(NoDeleteModel):
 
 class AuditLog(AppendOnlyModel):
     actor = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, on_delete=models.PROTECT,
+        settings.AUTH_USER_MODEL,
+        null=True,
+        on_delete=models.PROTECT,
         related_name="audit_entries",
     )
     verb = models.CharField(max_length=100)

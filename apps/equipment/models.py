@@ -63,7 +63,10 @@ class StatusEvent(AppendOnlyModel):
     remark = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     work_order = models.ForeignKey(
-        "maintenance.WorkOrder", null=True, blank=True, on_delete=models.PROTECT,
+        "maintenance.WorkOrder",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
         related_name="status_events",
     )
 

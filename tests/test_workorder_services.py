@@ -4,12 +4,21 @@ from django.core.exceptions import PermissionDenied
 from apps.core.exceptions import WorkOrderStateError
 from apps.equipment.models import EquipmentStatus
 from apps.maintenance.models import (
-    CloseReason, ComplaintStatus, FaultCategory, RemarkKind,
-    WorkOrderOutcome, WorkOrderStatus,
+    CloseReason,
+    ComplaintStatus,
+    FaultCategory,
+    RemarkKind,
+    WorkOrderOutcome,
+    WorkOrderStatus,
 )
 from apps.maintenance.services import (
-    add_participant, add_remark, cancel_work_order, complete_work_order,
-    lodge_complaint, open_work_order, start_repair,
+    add_participant,
+    add_remark,
+    cancel_work_order,
+    complete_work_order,
+    lodge_complaint,
+    open_work_order,
+    start_repair,
 )
 
 pytestmark = pytest.mark.django_db
@@ -19,7 +28,8 @@ def test_open_work_order_attaches_all_open_complaints(equipment, staff_user, eng
     c1 = lodge_complaint(staff_user, equipment, "broken")
     c2 = lodge_complaint(staff_user, equipment, "also broken")
     wo = open_work_order(equipment, engineer)
-    c1.refresh_from_db(); c2.refresh_from_db()
+    c1.refresh_from_db()
+    c2.refresh_from_db()
     assert c1.status == ComplaintStatus.ATTACHED and c1.work_order == wo
     assert c2.status == ComplaintStatus.ATTACHED and c2.work_order == wo
 
@@ -60,10 +70,14 @@ def test_complete_work_order_full_cascade(equipment, staff_user, engineer, engin
     complaint = lodge_complaint(staff_user, equipment, "no power")
     wo = start_repair(open_work_order(equipment, engineer), engineer)
     wo = complete_work_order(
-        wo, engineer2, fault_category=FaultCategory.BATTERY_POWER,
-        participants=[engineer], remark="replaced battery pack",
+        wo,
+        engineer2,
+        fault_category=FaultCategory.BATTERY_POWER,
+        participants=[engineer],
+        remark="replaced battery pack",
     )
-    equipment.refresh_from_db(); complaint.refresh_from_db()
+    equipment.refresh_from_db()
+    complaint.refresh_from_db()
     assert wo.status == WorkOrderStatus.COMPLETED
     assert wo.outcome == WorkOrderOutcome.REPAIRED
     assert wo.fault_category == FaultCategory.BATTERY_POWER
@@ -86,7 +100,8 @@ def test_cancel_from_in_progress_restores_working(equipment, staff_user, enginee
     complaint = lodge_complaint(staff_user, equipment, "weird noise")
     wo = start_repair(open_work_order(equipment, engineer), engineer)
     wo = cancel_work_order(wo, engineer, note="no fault found on inspection")
-    equipment.refresh_from_db(); complaint.refresh_from_db()
+    equipment.refresh_from_db()
+    complaint.refresh_from_db()
     assert wo.status == WorkOrderStatus.CANCELLED
     assert equipment.status == EquipmentStatus.WORKING
     assert complaint.close_reason == CloseReason.NO_FAULT

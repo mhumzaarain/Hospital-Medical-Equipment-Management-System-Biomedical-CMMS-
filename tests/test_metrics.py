@@ -4,11 +4,16 @@ import pytest
 from django.utils import timezone
 
 from apps.maintenance.models import (
-    CloseReason, Complaint, FaultCategory, WorkOrder, WorkOrderStatus,
+    CloseReason,
+    FaultCategory,
 )
 from apps.maintenance.services import (
-    close_complaint, complete_work_order, lodge_complaint, open_work_order,
-    add_remark, start_repair,
+    add_remark,
+    close_complaint,
+    complete_work_order,
+    lodge_complaint,
+    open_work_order,
+    start_repair,
 )
 from apps.reports import metrics
 
@@ -52,23 +57,31 @@ def test_non_critical_equipment_excluded(equipment, staff_user, engineer):
     lodge_complaint(staff_user, equipment, "broken")  # equipment fixture: not critical
     wo = start_repair(open_work_order(equipment, engineer), engineer)
     complete_work_order(wo, engineer, FaultCategory.OTHER)
-    assert metrics.critical_downtime_by_department(
-        now - timedelta(days=30), timezone.now()) == {}
+    assert (
+        metrics.critical_downtime_by_department(
+            now - timedelta(days=30), timezone.now()
+        )
+        == {}
+    )
 
 
 def test_per_engineer_activity_counts_participation(
-        equipment, staff_user, engineer, engineer2):
+    equipment, staff_user, engineer, engineer2
+):
     now = timezone.now()
     lodge_complaint(staff_user, equipment, "broken")
     wo = start_repair(open_work_order(equipment, engineer), engineer)
-    complete_work_order(wo, engineer2, FaultCategory.MECHANICAL,
-                        participants=[engineer])
+    complete_work_order(
+        wo, engineer2, FaultCategory.MECHANICAL, participants=[engineer]
+    )
     extra = lodge_complaint(staff_user, equipment, "hmm")
     close_complaint(extra, engineer, CloseReason.NO_FAULT, close_note="fine")
-    rows = {r["employee_id"]: r for r in
-            metrics.per_engineer_activity(now - timedelta(days=1), timezone.now())}
-    assert rows["EMP-100"]["repairs"] == 1       # participant
-    assert rows["EMP-101"]["repairs"] == 1       # closer, auto-participant
+    rows = {
+        r["employee_id"]: r
+        for r in metrics.per_engineer_activity(now - timedelta(days=1), timezone.now())
+    }
+    assert rows["EMP-100"]["repairs"] == 1  # participant
+    assert rows["EMP-101"]["repairs"] == 1  # closer, auto-participant
     assert rows["EMP-100"]["complaints_closed"] == 1
 
 

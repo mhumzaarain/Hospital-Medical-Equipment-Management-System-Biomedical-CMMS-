@@ -12,8 +12,12 @@
     "**/.pytest_cache": true
   },
   "[python]": {
-    "editor.formatOnSave": false,
-    "editor.rulers": [88]
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.rulers": [88],
+    "editor.codeActionsOnSave": {
+      "source.organizeImports.ruff": "explicit"
+    }
   },
   "cSpell.words": ["staticfiles", "procrastinate", "psycopg", "htmx", "Alpine", "gunicorn", "condemn", "biomedical", "CMMS"]
 }

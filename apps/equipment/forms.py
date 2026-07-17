@@ -2,16 +2,26 @@ from django import forms
 
 from .models import Equipment
 
-INPUT = ("w-full rounded border border-slate-300 px-3 py-2 "
-         "focus:border-sky-500 focus:outline-none")
+INPUT = (
+    "w-full rounded border border-slate-300 px-3 py-2 "
+    "focus:border-sky-500 focus:outline-none"
+)
 
 
 class EquipmentForm(forms.ModelForm):
     class Meta:
         model = Equipment
-        fields = ["name", "manufacturer", "vendor", "model_number",
-                  "serial_number", "department", "is_critical_asset",
-                  "purchase_date", "installation_date"]
+        fields = [
+            "name",
+            "manufacturer",
+            "vendor",
+            "model_number",
+            "serial_number",
+            "department",
+            "is_critical_asset",
+            "purchase_date",
+            "installation_date",
+        ]
         widgets = {
             "purchase_date": forms.DateInput(attrs={"type": "date"}),
             "installation_date": forms.DateInput(attrs={"type": "date"}),

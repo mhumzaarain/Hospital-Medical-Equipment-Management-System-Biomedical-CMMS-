@@ -57,14 +57,18 @@ class WorkOrder(NoDeleteModel):
         max_length=20, choices=WorkOrderStatus.choices, default=WorkOrderStatus.OPEN
     )
     opened_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
         related_name="workorders_opened",
     )
     opened_at = models.DateTimeField(auto_now_add=True)
     repair_started_at = models.DateTimeField(null=True, blank=True)
     repair_completed_at = models.DateTimeField(null=True, blank=True)
     closed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
         related_name="workorders_closed",
     )
     closed_at = models.DateTimeField(null=True, blank=True)
@@ -72,11 +76,16 @@ class WorkOrder(NoDeleteModel):
         max_length=20, choices=WorkOrderOutcome.choices, null=True, blank=True
     )
     fault_category = models.CharField(
-        max_length=30, choices=FaultCategory.choices, null=True, blank=True,
+        max_length=30,
+        choices=FaultCategory.choices,
+        null=True,
+        blank=True,
         help_text="Required when completing a repair.",
     )
     participants = models.ManyToManyField(
-        settings.AUTH_USER_MODEL, blank=True, related_name="workorders_participated",
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name="workorders_participated",
         help_text="Engineers who worked on this repair.",
     )
 
@@ -105,7 +114,8 @@ class Complaint(NoDeleteModel):
         Equipment, on_delete=models.PROTECT, related_name="complaints"
     )
     reporter = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
         related_name="complaints_reported",
     )
     description = models.TextField()
@@ -114,19 +124,28 @@ class Complaint(NoDeleteModel):
         max_length=20, choices=ComplaintStatus.choices, default=ComplaintStatus.OPEN
     )
     work_order = models.ForeignKey(
-        WorkOrder, null=True, blank=True, on_delete=models.PROTECT,
+        WorkOrder,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
         related_name="complaints",
     )
     close_reason = models.CharField(
         max_length=20, choices=CloseReason.choices, null=True, blank=True
     )
     duplicate_of = models.ForeignKey(
-        "self", null=True, blank=True, on_delete=models.PROTECT,
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
         related_name="duplicates",
     )
     close_note = models.TextField(blank=True)
     closed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.PROTECT,
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
         related_name="complaints_closed",
     )
     closed_at = models.DateTimeField(null=True, blank=True)

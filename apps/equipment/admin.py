@@ -10,8 +10,14 @@ class DepartmentAdmin(admin.ModelAdmin):
 
 @admin.register(Equipment)
 class EquipmentAdmin(admin.ModelAdmin):
-    list_display = ("name", "model_number", "serial_number", "department",
-                    "status", "is_critical_asset")
+    list_display = (
+        "name",
+        "model_number",
+        "serial_number",
+        "department",
+        "status",
+        "is_critical_asset",
+    )
     list_filter = ("status", "department", "is_critical_asset")
     search_fields = ("name", "serial_number", "model_number", "manufacturer")
     readonly_fields = ("status", "condemned_at", "condemned_location")

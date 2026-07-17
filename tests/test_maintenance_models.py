@@ -2,7 +2,10 @@ import pytest
 from django.db import IntegrityError, transaction
 
 from apps.maintenance.models import (
-    Remark, RemarkKind, WorkOrder, WorkOrderStatus,
+    Remark,
+    RemarkKind,
+    WorkOrder,
+    WorkOrderStatus,
 )
 
 pytestmark = pytest.mark.django_db

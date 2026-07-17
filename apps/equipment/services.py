@@ -31,11 +31,19 @@ def transition_status(equipment, new_status, actor, remark="", work_order=None):
     equipment.status = new_status
     equipment.save(update_fields=["status"])
     event = StatusEvent.objects.create(
-        equipment=equipment, old_status=old_status, new_status=new_status,
-        actor=actor, remark=remark, work_order=work_order,
+        equipment=equipment,
+        old_status=old_status,
+        new_status=new_status,
+        actor=actor,
+        remark=remark,
+        work_order=work_order,
     )
-    audit.record(actor, "equipment.status_changed", equipment,
-                 {"old": old_status, "new": new_status, "remark": remark})
+    audit.record(
+        actor,
+        "equipment.status_changed",
+        equipment,
+        {"old": old_status, "new": new_status, "remark": remark},
+    )
     return event
 
 
@@ -45,8 +53,13 @@ def condemn_equipment(equipment, actor, remark, condemned_location):
     from django.utils import timezone
 
     from apps.maintenance.models import (
-        ACTIVE_WORKORDER_STATUSES, CloseReason, ComplaintStatus, Remark,
-        RemarkKind, WorkOrderOutcome, WorkOrderStatus,
+        ACTIVE_WORKORDER_STATUSES,
+        CloseReason,
+        ComplaintStatus,
+        Remark,
+        RemarkKind,
+        WorkOrderOutcome,
+        WorkOrderStatus,
     )
     from apps.maintenance.services import close_complaint
 
@@ -66,20 +79,33 @@ def condemn_equipment(equipment, actor, remark, condemned_location):
         active_wo.repair_completed_at = active_wo.repair_completed_at or now
         active_wo.closed_by = actor
         active_wo.closed_at = now
-        active_wo.save(update_fields=[
-            "status", "outcome", "repair_completed_at", "closed_by", "closed_at",
-        ])
+        active_wo.save(
+            update_fields=[
+                "status",
+                "outcome",
+                "repair_completed_at",
+                "closed_by",
+                "closed_at",
+            ]
+        )
         Remark.objects.create(
-            work_order=active_wo, author=actor, kind=RemarkKind.SYSTEM,
+            work_order=active_wo,
+            author=actor,
+            kind=RemarkKind.SYSTEM,
             text="Device condemned; work order closed automatically.",
         )
 
     for complaint in equipment.complaints.exclude(status=ComplaintStatus.CLOSED):
-        close_complaint(complaint, actor, CloseReason.RESOLVED,
-                        close_note="Device condemned.")
+        close_complaint(
+            complaint, actor, CloseReason.RESOLVED, close_note="Device condemned."
+        )
 
-    audit.record(actor, "equipment.condemned", equipment,
-                 {"remark": remark, "location": condemned_location})
+    audit.record(
+        actor,
+        "equipment.condemned",
+        equipment,
+        {"remark": remark, "location": condemned_location},
+    )
     return equipment
 
 
@@ -87,8 +113,12 @@ def condemn_equipment(equipment, actor, remark, condemned_location):
 def create_equipment(actor, **fields):
     _require_engineer_or_admin(actor)
     equipment = Equipment.objects.create(**fields)
-    audit.record(actor, "equipment.created", equipment,
-                 {"serial_number": equipment.serial_number})
+    audit.record(
+        actor,
+        "equipment.created",
+        equipment,
+        {"serial_number": equipment.serial_number},
+    )
     return equipment
 
 

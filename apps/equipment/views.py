@@ -25,8 +25,10 @@ class EquipmentListView(LoginRequiredMixin, ListView):
         q = self.request.GET.get("q", "").strip()
         if q:
             qs = qs.filter(
-                Q(serial_number__icontains=q) | Q(name__icontains=q)
-                | Q(model_number__icontains=q) | Q(manufacturer__icontains=q)
+                Q(serial_number__icontains=q)
+                | Q(name__icontains=q)
+                | Q(model_number__icontains=q)
+                | Q(manufacturer__icontains=q)
             )
         status = self.request.GET.get("status", "")
         if status:
@@ -44,13 +46,14 @@ class EquipmentSearchView(LoginRequiredMixin, View):
             results = results.filter(status=EquipmentStatus.WORKING)
         if q:
             results = results.filter(
-                Q(serial_number__icontains=q) | Q(name__icontains=q)
-                | Q(model_number__icontains=q) | Q(manufacturer__icontains=q)
+                Q(serial_number__icontains=q)
+                | Q(name__icontains=q)
+                | Q(model_number__icontains=q)
+                | Q(manufacturer__icontains=q)
             )[:10]
         else:
             results = results.none()
-        return render(request, "equipment/_search_results.html",
-                      {"results": results})
+        return render(request, "equipment/_search_results.html", {"results": results})
 
 
 class EquipmentDetailView(LoginRequiredMixin, DetailView):
@@ -65,7 +68,8 @@ class EquipmentDetailView(LoginRequiredMixin, DetailView):
         ctx["open_complaints"] = eq.complaints.exclude(status="closed")
         ctx["can_engineer"] = self.request.user.is_engineer_or_admin
         ctx["completed_repair_count"] = eq.work_orders.filter(
-            status="completed").count()
+            status="completed"
+        ).count()
         return ctx
 
 
@@ -90,15 +94,17 @@ class EquipmentEditView(RoleRequiredMixin, View):
     def get(self, request, pk):
         equipment = get_object_or_404(Equipment, pk=pk)
         form = EquipmentForm(instance=equipment)
-        return render(request, "equipment/form.html",
-                      {"form": form, "equipment": equipment})
+        return render(
+            request, "equipment/form.html", {"form": form, "equipment": equipment}
+        )
 
     def post(self, request, pk):
         equipment = get_object_or_404(Equipment, pk=pk)
         form = EquipmentForm(request.POST, instance=equipment)
         if not form.is_valid():
-            return render(request, "equipment/form.html",
-                          {"form": form, "equipment": equipment})
+            return render(
+                request, "equipment/form.html", {"form": form, "equipment": equipment}
+            )
         fresh = Equipment.objects.get(pk=pk)
         services.update_equipment(fresh, request.user, **form.cleaned_data)
         messages.success(request, "Equipment updated.")
@@ -110,15 +116,21 @@ class EquipmentCondemnView(RoleRequiredMixin, View):
 
     def get(self, request, pk):
         equipment = get_object_or_404(Equipment, pk=pk)
-        return render(request, "equipment/condemn.html",
-                      {"equipment": equipment, "form": CondemnForm()})
+        return render(
+            request,
+            "equipment/condemn.html",
+            {"equipment": equipment, "form": CondemnForm()},
+        )
 
     def post(self, request, pk):
         equipment = get_object_or_404(Equipment, pk=pk)
         form = CondemnForm(request.POST)
         if not form.is_valid():
-            return render(request, "equipment/condemn.html",
-                          {"equipment": equipment, "form": form})
+            return render(
+                request,
+                "equipment/condemn.html",
+                {"equipment": equipment, "form": form},
+            )
         try:
             services.condemn_equipment(equipment, request.user, **form.cleaned_data)
         except DomainError as exc:
