@@ -96,8 +96,10 @@ class Command(BaseCommand):
 
         # ~90 days of complaint -> repair history through the real services
         for day_offset in range(90, 0, -2):
-            device = random.choice([d for d in devices
-                                    if d.status == "working"])
+            working_devices = [d for d in devices if d.status == "working"]
+            if not working_devices:
+                continue
+            device = random.choice(working_devices)
             device.refresh_from_db()
             if device.status != "working":
                 continue
@@ -130,15 +132,18 @@ class Command(BaseCommand):
 
         # a couple of currently-open complaints for the queue demo
         for _ in range(4):
-            device = random.choice([d for d in devices if d.status == "working"])
+            working_devices = [d for d in devices if d.status == "working"]
+            if not working_devices:
+                continue
+            device = random.choice(working_devices)
             device.refresh_from_db()
             if device.status == "working":
                 lodge_complaint(random.choice(staff), device,
                                 random.choice(COMPLAINT_TEXTS))
 
         # two condemned devices
-        for device in random.sample(
-                [d for d in devices if not d.is_critical_asset], 2):
+        condemn_pool = [d for d in devices if not d.is_critical_asset]
+        for device in random.sample(condemn_pool, min(2, len(condemn_pool))):
             device.refresh_from_db()
             if device.status == "working":
                 condemn_equipment(device, admin,
