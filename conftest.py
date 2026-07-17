@@ -30,3 +30,33 @@ def admin_user(db):
     return get_user_model().objects.create_user(
         username="boss", password="pw", employee_id="EMP-900", role="admin",
     )
+
+
+from apps.equipment.models import Department, Equipment
+
+
+@pytest.fixture
+def department(db):
+    return Department.objects.create(name="ICU", location="Block A")
+
+
+@pytest.fixture
+def department2(db):
+    return Department.objects.create(name="Radiology", location="Block B")
+
+
+@pytest.fixture
+def make_equipment(department):
+    def _make(**overrides):
+        fields = dict(
+            name="Ventilator", manufacturer="Hamilton", vendor="MedServe Ltd",
+            model_number="C2", serial_number="SN-0001", department=department,
+        )
+        fields.update(overrides)
+        return Equipment.objects.create(**fields)
+    return _make
+
+
+@pytest.fixture
+def equipment(make_equipment):
+    return make_equipment()
