@@ -162,6 +162,7 @@ def cancel_work_order(work_order, actor, note="") -> WorkOrder:
     return work_order
 
 
+@transaction.atomic
 def add_remark(work_order, author, text, kind=RemarkKind.NOTE) -> Remark:
     _require_engineer_or_admin(author)
     remark = Remark.objects.create(
@@ -172,6 +173,7 @@ def add_remark(work_order, author, text, kind=RemarkKind.NOTE) -> Remark:
     return remark
 
 
+@transaction.atomic
 def add_participant(work_order, actor, user) -> None:
     _require_engineer_or_admin(actor)
     _require_engineer_or_admin(user)
