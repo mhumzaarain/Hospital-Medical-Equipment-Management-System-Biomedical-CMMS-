@@ -31,3 +31,8 @@ def test_home_requires_login(client):
     response = client.get("/")
     assert response.status_code == 302
     assert "/accounts/login/" in response.url
+
+
+def test_login_page_uses_base_template(client):
+    response = client.get("/accounts/login/")
+    assert b"CMMS" in response.content

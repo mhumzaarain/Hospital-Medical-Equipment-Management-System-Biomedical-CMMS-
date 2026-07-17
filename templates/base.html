@@ -1,0 +1,32 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ HOSPITAL_NAME }} CMMS{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <script src="{% static 'js/htmx.min.js' %}" defer></script>
+  <script src="{% static 'js/alpine.min.js' %}" defer></script>
+</head>
+<body class="min-h-screen bg-slate-100 text-slate-900">
+<nav class="bg-sky-900 text-white">
+  <div class="mx-auto max-w-6xl px-4 py-3 flex items-center gap-6">
+    <a href="{% url 'home' %}" class="font-bold">{{ HOSPITAL_NAME }} · CMMS</a>
+    {% if user.is_authenticated %}{# nav links enabled by Tasks 11-13 #}
+      <form method="post" action="{% url 'logout' %}" class="ml-auto">
+        {% csrf_token %}
+        <button class="text-sky-200 hover:underline">
+          Log out ({{ user.employee_id }})
+        </button>
+      </form>
+    {% endif %}
+  </div>
+</nav>
+<main class="mx-auto max-w-6xl px-4 py-6">
+  {% include "partials/_messages.html" %}
+  {% block content %}{% endblock %}
+</main>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
