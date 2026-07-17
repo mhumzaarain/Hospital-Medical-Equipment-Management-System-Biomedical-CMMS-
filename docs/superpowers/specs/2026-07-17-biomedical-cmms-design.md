@@ -127,6 +127,17 @@ query (`GROUP BY fault_category HAVING COUNT(*) >= 2` over a rolling window)
 instead of an AI guess over free text. The engineer picks it from a dropdown on
 the completion form. Cancelled work orders never get one (false alarm — no fault).
 
+**Participants (multi-engineer credit):** `participants` M2M to User — the
+engineers who actually worked on the repair, distinct from `closed_by` (the
+single accountable sign-off that certifies the machine fit for service).
+- Only Engineer/Admin users can be participants.
+- Auto-added: whoever starts the repair and whoever completes it.
+- Self-serve: an "I'm working on this" button on the work-order page adds the
+  current engineer (and shows colleagues who's already on it).
+- Completion form shows an engineer checkbox list (participants pre-ticked) so
+  the closer can credit a colleague who never touched the software.
+- Participant additions/removals are recorded in the AuditLog.
+
 - Complaints attach N:1 to a WorkOrder; a WorkOrder may also exist with zero
   complaints (engineer-initiated, e.g. found during inspection).
 - **At most one non-closed WorkOrder per device** (partial unique index).
@@ -201,8 +212,12 @@ distorts a mean into a false story). **No SLA metrics.**
   contributes its hours to each month proportionally.
 - **Dashboard (Chart.js):** critical-asset downtime, complaints per department,
   most-complained devices, most common fault categories, repairs completed
-  count, currently open work orders, and repairs carrying `delay` remarks with
-  their reasons.
+  count, currently open work orders, repairs carrying `delay` remarks with
+  their reasons, and **per-engineer activity** per month.
+- **Per-engineer attribution:** repairs per engineer = completed work orders
+  where the engineer appears in `participants` (a shared repair credits every
+  participant). Complaints closed per engineer (duplicates / no-fault) are
+  credited to the complaint's `closed_by`.
 - **Monthly management report:** the same aggregates for the month, computed in
   SQL, plus an LLM-written narrative summary; rendered to PDF (WeasyPrint),
   stored on disk, downloadable; generated monthly by schedule and on demand.
