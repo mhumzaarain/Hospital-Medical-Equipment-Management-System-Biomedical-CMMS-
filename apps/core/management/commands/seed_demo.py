@@ -1,0 +1,152 @@
+import random
+import sys
+from datetime import timedelta
+
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
+from apps.accounts.models import Roles
+from apps.equipment.models import Department, Equipment, StatusEvent
+from apps.equipment.services import condemn_equipment
+from apps.maintenance.models import Complaint, FaultCategory, WorkOrder
+from apps.maintenance.services import (
+    add_remark, complete_work_order, lodge_complaint, open_work_order,
+    start_repair,
+)
+
+DEVICES = [
+    ("MRI Scanner", "Siemens", "Magnetom Aera", True),
+    ("CT Scanner", "GE Healthcare", "Revolution ACT", True),
+    ("Angiography System", "Philips", "Azurion 7", True),
+    ("Ventilator", "Hamilton", "C2", True),
+    ("Infusion Pump", "B.Braun", "Perfusor Space", False),
+    ("Patient Monitor", "Mindray", "uMEC 12", False),
+    ("Defibrillator", "Zoll", "R Series", False),
+    ("ECG Machine", "Schiller", "Cardiovit AT-102", False),
+    ("Suction Machine", "Yuwell", "7A-23D", False),
+    ("Syringe Pump", "Medtronic", "SP-500", False),
+    ("Ultrasound", "Mindray", "DC-70", False),
+    ("Anesthesia Machine", "Draeger", "Fabius Plus", False),
+]
+COMPLAINT_TEXTS = [
+    "Screen goes black after a few minutes of use.",
+    "Machine will not power on at all.",
+    "Loud clicking noise during operation.",
+    "Battery drains within minutes when unplugged.",
+    "Error code E-42 shown, alarm keeps beeping.",
+    "Readings look wrong compared to the backup unit.",
+    "Smells like something is burning inside.",
+    "Touch panel not responding to input.",
+]
+DELAY_TEXTS = [
+    "Waiting for spare part from vendor.",
+    "Part shipment delayed due to holidays.",
+    "Awaiting quotation approval from procurement.",
+]
+
+
+def backdate(model, pk, **fields):
+    model.objects.filter(pk=pk).update(**fields)
+
+
+class Command(BaseCommand):
+    help = "Seed the database with realistic demo data. Refuses on non-empty DB."
+
+    def handle(self, *args, **options):
+        if Equipment.objects.exists():
+            self.stderr.write("Database already has equipment; refusing to seed.")
+            sys.exit(1)
+        random.seed(42)
+        User = get_user_model()
+        now = timezone.now()
+
+        departments = [Department.objects.create(name=n, location=l) for n, l in [
+            ("ICU", "Block A, Floor 2"), ("Radiology", "Block B, Ground"),
+            ("Emergency", "Block A, Ground"), ("Cardiology", "Block C, Floor 1"),
+            ("Operation Theater", "Block A, Floor 3"),
+        ]]
+        admin = User.objects.create_user(
+            username="admin", password="demo1234", employee_id="EMP-900",
+            role=Roles.ADMIN, first_name="Ayesha", last_name="Malik",
+            is_staff=True, is_superuser=True)
+        engineers = [User.objects.create_user(
+            username=f"engineer{i}", password="demo1234",
+            employee_id=f"EMP-10{i}", role=Roles.ENGINEER,
+            first_name=f"Engineer{i}", last_name="Demo") for i in range(1, 4)]
+        staff = [User.objects.create_user(
+            username=f"staff{i}", password="demo1234",
+            employee_id=f"EMP-00{i}", role=Roles.STAFF,
+            first_name=f"Staff{i}", last_name="Demo",
+            department=random.choice(departments)) for i in range(1, 11)]
+
+        devices = []
+        serial = 1000
+        for name, maker, model, critical in DEVICES:
+            for _ in range(random.randint(3, 7)):
+                serial += 1
+                devices.append(Equipment.objects.create(
+                    name=name, manufacturer=maker, vendor="MedServe Ltd",
+                    model_number=model, serial_number=f"SN-{serial}",
+                    department=random.choice(departments),
+                    is_critical_asset=critical,
+                    purchase_date=now.date() - timedelta(days=random.randint(400, 3000)),
+                    installation_date=now.date() - timedelta(days=random.randint(100, 400)),
+                ))
+
+        # ~90 days of complaint -> repair history through the real services
+        for day_offset in range(90, 0, -2):
+            device = random.choice([d for d in devices
+                                    if d.status == "working"])
+            device.refresh_from_db()
+            if device.status != "working":
+                continue
+            reporter = random.choice(staff)
+            engineer = random.choice(engineers)
+            t0 = now - timedelta(days=day_offset, hours=random.randint(0, 8))
+            complaint = lodge_complaint(reporter, device,
+                                        random.choice(COMPLAINT_TEXTS))
+            backdate(Complaint, complaint.pk, created_at=t0)
+            wo = open_work_order(device, engineer)
+            backdate(WorkOrder, wo.pk, opened_at=t0 + timedelta(hours=1))
+            wo.refresh_from_db()
+            wo = start_repair(wo, engineer)
+            started = t0 + timedelta(hours=random.randint(2, 24))
+            backdate(WorkOrder, wo.pk, repair_started_at=started)
+            repair_hours = random.choice([2, 4, 6, 12, 24, 48, 96])
+            if repair_hours >= 48:
+                add_remark(wo, engineer, random.choice(DELAY_TEXTS), kind="delay")
+            wo.refresh_from_db()
+            wo = complete_work_order(
+                wo, engineer,
+                fault_category=random.choice(FaultCategory.values),
+                remark="Repaired and tested OK.")
+            done = started + timedelta(hours=repair_hours)
+            backdate(WorkOrder, wo.pk, repair_completed_at=done, closed_at=done)
+            # backdate the two status events of this cycle
+            for event in StatusEvent.objects.filter(work_order=wo):
+                ts = started if event.new_status == "in_repair" else done
+                backdate(StatusEvent, event.pk, created_at=ts)
+
+        # a couple of currently-open complaints for the queue demo
+        for _ in range(4):
+            device = random.choice([d for d in devices if d.status == "working"])
+            device.refresh_from_db()
+            if device.status == "working":
+                lodge_complaint(random.choice(staff), device,
+                                random.choice(COMPLAINT_TEXTS))
+
+        # two condemned devices
+        for device in random.sample(
+                [d for d in devices if not d.is_critical_asset], 2):
+            device.refresh_from_db()
+            if device.status == "working":
+                condemn_equipment(device, admin,
+                                  remark="Beyond economical repair.",
+                                  condemned_location="Condemned store, basement")
+
+        self.stdout.write(self.style.SUCCESS(
+            f"Seeded {Equipment.objects.count()} devices, "
+            f"{Complaint.objects.count()} complaints, "
+            f"{WorkOrder.objects.count()} work orders. "
+            "Logins: admin/demo1234, engineer1/demo1234, staff1/demo1234"))
