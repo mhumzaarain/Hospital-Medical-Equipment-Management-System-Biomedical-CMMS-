@@ -37,3 +37,47 @@ def transition_status(equipment, new_status, actor, remark="", work_order=None):
     audit.record(actor, "equipment.status_changed", equipment,
                  {"old": old_status, "new": new_status, "remark": remark})
     return event
+
+
+@transaction.atomic
+def condemn_equipment(equipment, actor, remark, condemned_location):
+    """Terminal lifecycle step. Cascades in one transaction (spec section 6)."""
+    from django.utils import timezone
+
+    from apps.maintenance.models import (
+        ACTIVE_WORKORDER_STATUSES, CloseReason, ComplaintStatus, Remark,
+        RemarkKind, WorkOrderOutcome, WorkOrderStatus,
+    )
+    from apps.maintenance.services import close_complaint
+
+    transition_status(equipment, EquipmentStatus.CONDEMNED, actor, remark=remark)
+    equipment.refresh_from_db()
+    equipment.condemned_at = timezone.now()
+    equipment.condemned_location = condemned_location
+    equipment.save(update_fields=["condemned_at", "condemned_location"])
+
+    active_wo = equipment.work_orders.filter(
+        status__in=ACTIVE_WORKORDER_STATUSES
+    ).first()
+    if active_wo:
+        now = timezone.now()
+        active_wo.status = WorkOrderStatus.COMPLETED
+        active_wo.outcome = WorkOrderOutcome.CONDEMNED
+        active_wo.repair_completed_at = active_wo.repair_completed_at or now
+        active_wo.closed_by = actor
+        active_wo.closed_at = now
+        active_wo.save(update_fields=[
+            "status", "outcome", "repair_completed_at", "closed_by", "closed_at",
+        ])
+        Remark.objects.create(
+            work_order=active_wo, author=actor, kind=RemarkKind.SYSTEM,
+            text="Device condemned; work order closed automatically.",
+        )
+
+    for complaint in equipment.complaints.exclude(status=ComplaintStatus.CLOSED):
+        close_complaint(complaint, actor, CloseReason.RESOLVED,
+                        close_note="Device condemned.")
+
+    audit.record(actor, "equipment.condemned", equipment,
+                 {"remark": remark, "location": condemned_location})
+    return equipment
