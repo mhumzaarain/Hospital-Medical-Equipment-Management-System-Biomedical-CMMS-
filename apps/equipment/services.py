@@ -32,7 +32,7 @@ def transition_status(equipment, new_status, actor, remark="", work_order=None):
     equipment.save(update_fields=["status"])
     event = StatusEvent.objects.create(
         equipment=equipment, old_status=old_status, new_status=new_status,
-        actor=actor, remark=remark,
+        actor=actor, remark=remark, work_order=work_order,
     )
     audit.record(actor, "equipment.status_changed", equipment,
                  {"old": old_status, "new": new_status, "remark": remark})

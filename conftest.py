@@ -60,3 +60,19 @@ def make_equipment(department):
 @pytest.fixture
 def equipment(make_equipment):
     return make_equipment()
+
+
+from apps.maintenance.models import WorkOrder, WorkOrderStatus
+
+
+@pytest.fixture
+def make_work_order(equipment, engineer):
+    def _make(eq=None, **overrides):
+        fields = dict(
+            equipment=eq or equipment,
+            status=WorkOrderStatus.OPEN,
+            opened_by=engineer,
+        )
+        fields.update(overrides)
+        return WorkOrder.objects.create(**fields)
+    return _make

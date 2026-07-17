@@ -62,7 +62,10 @@ class StatusEvent(AppendOnlyModel):
     )
     remark = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    # work_order FK is added in Task 6 (maintenance app must exist first)
+    work_order = models.ForeignKey(
+        "maintenance.WorkOrder", null=True, blank=True, on_delete=models.PROTECT,
+        related_name="status_events",
+    )
 
     class Meta:
         ordering = ["-created_at"]
