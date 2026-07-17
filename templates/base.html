@@ -19,6 +19,7 @@
       <a href="{% url 'my_complaints' %}" class="hover:underline">My Complaints</a>
       {% if user.is_engineer_or_admin %}
         <a href="{% url 'complaint_queue' %}" class="hover:underline">Queue</a>
+        <a href="{% url 'dashboard' %}" class="hover:underline">Dashboard</a>
       {% endif %}
       <form method="post" action="{% url 'logout' %}" class="ml-auto">
         {% csrf_token %}
