@@ -14,6 +14,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "procrastinate.contrib.django",
     "apps.accounts",
     "apps.core",
     "apps.equipment",
