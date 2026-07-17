@@ -177,6 +177,8 @@ def add_remark(work_order, author, text, kind=RemarkKind.NOTE) -> Remark:
 def add_participant(work_order, actor, user) -> None:
     _require_engineer_or_admin(actor)
     _require_engineer_or_admin(user)
+    if not work_order.is_active:
+        raise WorkOrderStateError("Cannot add participants to a closed work order.")
     work_order.participants.add(user)
     audit.record(actor, "workorder.participant_added", work_order,
                  {"user": user.employee_id})

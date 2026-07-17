@@ -187,6 +187,10 @@ def workorder_remark(request, pk):
 def workorder_join(request, pk):
     _require_engineer(request.user)
     wo = get_object_or_404(WorkOrder, pk=pk)
-    services.add_participant(wo, request.user, request.user)
-    messages.success(request, "You are now a participant on this work order.")
+    try:
+        services.add_participant(wo, request.user, request.user)
+    except DomainError as exc:
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, "You are now a participant on this work order.")
     return redirect("workorder_detail", pk=pk)

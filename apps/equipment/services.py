@@ -83,6 +83,7 @@ def condemn_equipment(equipment, actor, remark, condemned_location):
     return equipment
 
 
+@transaction.atomic
 def create_equipment(actor, **fields):
     _require_engineer_or_admin(actor)
     equipment = Equipment.objects.create(**fields)
@@ -91,6 +92,7 @@ def create_equipment(actor, **fields):
     return equipment
 
 
+@transaction.atomic
 def update_equipment(equipment, actor, **fields):
     _require_engineer_or_admin(actor)
     changes = {}
