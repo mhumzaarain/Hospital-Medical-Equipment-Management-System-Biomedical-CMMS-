@@ -1,0 +1,28 @@
+[project]
+name = "biomedical-cmms"
+version = "0.1.0"
+description = "Hospital Medical Equipment Management System (Biomedical CMMS) — Phase 1"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "Django~=5.2",
+    "psycopg[binary]~=3.2",
+    "procrastinate[django]~=3.5",
+    "gunicorn~=23.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest~=8.3",
+    "pytest-django~=4.9",
+]
+
+# This is a Django application, not a distributable package — uv manages the
+# environment but does not build/install the project itself.
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.dev"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
