@@ -100,6 +100,6 @@ def update_equipment(equipment, actor, **fields):
             changes[name] = {"old": str(old), "new": str(value)}
             setattr(equipment, name, value)
     if changes:
-        equipment.save(update_fields=list(fields.keys()))
+        equipment.save(update_fields=list(changes.keys()))
         audit.record(actor, "equipment.updated", equipment, changes)
     return equipment
