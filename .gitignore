@@ -5,3 +5,4 @@ staticfiles/
 bin/
 .pytest_cache/
 .superpowers/
+superpowers/
