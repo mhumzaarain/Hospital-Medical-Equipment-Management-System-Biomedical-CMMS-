@@ -35,3 +35,33 @@ def test_equipment_list_htmx_status_filter(client, engineer, make_equipment):
     )
     assert b"SN-BAD" in response.content
     assert b"SN-OK" not in response.content
+
+
+def test_queue_rows_text_filter(client, engineer, staff_user, make_equipment):
+    from apps.maintenance.services import lodge_complaint
+
+    eq1 = make_equipment(serial_number="SN-AAA")
+    eq2 = make_equipment(serial_number="SN-BBB")
+    lodge_complaint(staff_user, eq1, "screen flickers")
+    lodge_complaint(staff_user, eq2, "no power")
+    client.force_login(engineer)
+    response = client.get(reverse("complaint_queue_rows"), {"q": "flickers"})
+    assert b"SN-AAA" in response.content
+    assert b"SN-BBB" not in response.content
+
+
+def test_queue_rows_unassigned_filter(client, engineer, staff_user, equipment):
+    from apps.maintenance.services import lodge_complaint, open_work_order
+
+    lodge_complaint(staff_user, equipment, "no power")
+    open_work_order(equipment, engineer)
+    client.force_login(engineer)
+    response = client.get(reverse("complaint_queue_rows"), {"state": "unassigned"})
+    assert b"no power" not in response.content
+
+
+def test_complaint_age_hours(staff_user, equipment):
+    from apps.maintenance.services import lodge_complaint
+
+    c = lodge_complaint(staff_user, equipment, "no power")
+    assert 0 <= c.age_hours < 1

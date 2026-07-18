@@ -169,6 +169,12 @@ class Complaint(NoDeleteModel):
             and self.work_order.outcome == WorkOrderOutcome.REPAIRED
         )
 
+    @property
+    def age_hours(self) -> float:
+        from django.utils import timezone
+
+        return (timezone.now() - self.created_at).total_seconds() / 3600.0
+
     class Meta:
         ordering = ["-created_at"]
 
