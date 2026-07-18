@@ -181,16 +181,18 @@ def resolved_complaints_for_engineer(user, window_start, window_end):
         else:
             remarks = [complaint.close_note] if complaint.close_note else []
         eq = complaint.equipment
-        rows.append({
-            "complaint_id": complaint.id,
-            "equipment_id": eq.id,
-            "equipment_name": eq.name,
-            "equipment_model": eq.model_number,
-            "equipment_serial": eq.serial_number,
-            "resolution_type": _RESOLUTION_LABEL[complaint.close_reason],
-            "resolved_at": complaint.closed_at,
-            "remarks": remarks,
-        })
+        rows.append(
+            {
+                "complaint_id": complaint.id,
+                "equipment_id": eq.id,
+                "equipment_name": eq.name,
+                "equipment_model": eq.model_number,
+                "equipment_serial": eq.serial_number,
+                "resolution_type": _RESOLUTION_LABEL[complaint.close_reason],
+                "resolved_at": complaint.closed_at,
+                "remarks": remarks,
+            }
+        )
     return sorted(rows, key=lambda r: r["resolved_at"], reverse=True)
 
 

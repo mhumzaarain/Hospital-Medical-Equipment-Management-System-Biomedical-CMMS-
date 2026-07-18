@@ -248,6 +248,5 @@ def confirm_complaint(complaint, actor, is_functional) -> Complaint:
     )
     complaint.confirmed_at = timezone.now()
     complaint.save(update_fields=["functional_confirmation", "confirmed_at"])
-    audit.record(actor, "complaint.confirmed", complaint,
-                 {"functional": is_functional})
+    audit.record(actor, "complaint.confirmed", complaint, {"functional": is_functional})
     return complaint

@@ -132,26 +132,35 @@ def test_home_redirects_by_role(client, staff_user, engineer):
 
 
 def test_staff_confirms_via_view(client, staff_user, engineer, equipment):
-    from apps.maintenance.services import (
-        complete_work_order, lodge_complaint, open_work_order, start_repair,
-    )
     from apps.maintenance.models import FaultCategory, FunctionalConfirmation
+    from apps.maintenance.services import (
+        complete_work_order,
+        lodge_complaint,
+        open_work_order,
+        start_repair,
+    )
+
     complaint = lodge_complaint(staff_user, equipment, "no power")
     wo = start_repair(open_work_order(equipment, engineer), engineer)
     complete_work_order(wo, engineer, fault_category=FaultCategory.ELECTRICAL)
     client.force_login(staff_user)
-    response = client.post(reverse("complaint_confirm", args=[complaint.pk]),
-                           {"functional": "yes"})
+    response = client.post(
+        reverse("complaint_confirm", args=[complaint.pk]), {"functional": "yes"}
+    )
     assert response.status_code == 302
     complaint.refresh_from_db()
     assert complaint.functional_confirmation == FunctionalConfirmation.FUNCTIONAL
 
 
 def test_my_complaints_shows_confirm_prompt(client, staff_user, engineer, equipment):
-    from apps.maintenance.services import (
-        complete_work_order, lodge_complaint, open_work_order, start_repair,
-    )
     from apps.maintenance.models import FaultCategory
+    from apps.maintenance.services import (
+        complete_work_order,
+        lodge_complaint,
+        open_work_order,
+        start_repair,
+    )
+
     lodge_complaint(staff_user, equipment, "no power")
     wo = start_repair(open_work_order(equipment, engineer), engineer)
     complete_work_order(wo, engineer, fault_category=FaultCategory.ELECTRICAL)
@@ -161,34 +170,49 @@ def test_my_complaints_shows_confirm_prompt(client, staff_user, engineer, equipm
 
 
 def test_other_staff_cannot_confirm(client, staff_user, engineer, equipment):
-    from apps.maintenance.services import (
-        complete_work_order, lodge_complaint, open_work_order, start_repair,
-    )
-    from apps.maintenance.models import FaultCategory
     from django.contrib.auth import get_user_model
+
+    from apps.maintenance.models import FaultCategory
+    from apps.maintenance.services import (
+        complete_work_order,
+        lodge_complaint,
+        open_work_order,
+        start_repair,
+    )
+
     complaint = lodge_complaint(staff_user, equipment, "no power")
     wo = start_repair(open_work_order(equipment, engineer), engineer)
     complete_work_order(wo, engineer, fault_category=FaultCategory.ELECTRICAL)
     other = get_user_model().objects.create_user(
-        username="nurse2", password="pw", employee_id="EMP-002", role="staff")
+        username="nurse2", password="pw", employee_id="EMP-002", role="staff"
+    )
     client.force_login(other)
-    assert client.post(reverse("complaint_confirm", args=[complaint.pk]),
-                       {"functional": "yes"}).status_code == 403
+    assert (
+        client.post(
+            reverse("complaint_confirm", args=[complaint.pk]), {"functional": "yes"}
+        ).status_code
+        == 403
+    )
 
 
 def test_workorder_detail_forbidden_for_staff(client, staff_user, engineer, equipment):
     from apps.maintenance.services import open_work_order
+
     wo = open_work_order(equipment, engineer)
     client.force_login(staff_user)
     assert client.get(reverse("workorder_detail", args=[wo.pk])).status_code == 403
 
 
 def test_workorder_detail_shows_confirmation(client, engineer, staff_user, equipment):
+    from apps.maintenance.models import FaultCategory
     from apps.maintenance.services import (
-        complete_work_order, confirm_complaint, lodge_complaint, open_work_order,
+        complete_work_order,
+        confirm_complaint,
+        lodge_complaint,
+        open_work_order,
         start_repair,
     )
-    from apps.maintenance.models import FaultCategory
+
     complaint = lodge_complaint(staff_user, equipment, "no power")
     wo = start_repair(open_work_order(equipment, engineer), engineer)
     complete_work_order(wo, engineer, fault_category=FaultCategory.ELECTRICAL)

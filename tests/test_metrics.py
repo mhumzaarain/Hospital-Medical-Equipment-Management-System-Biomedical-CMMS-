@@ -85,46 +85,62 @@ def test_delayed_repairs_listed(equipment, engineer):
 
 
 def test_resolved_credits_all_participants(equipment, staff_user, engineer, engineer2):
-    from apps.maintenance.services import (
-        complete_work_order, lodge_complaint, open_work_order, start_repair,
-    )
     from apps.maintenance.models import FaultCategory
+    from apps.maintenance.services import (
+        complete_work_order,
+        lodge_complaint,
+        open_work_order,
+        start_repair,
+    )
+
     now = timezone.now()
     lodge_complaint(staff_user, equipment, "no power")
     wo = start_repair(open_work_order(equipment, engineer), engineer)
-    complete_work_order(wo, engineer2, fault_category=FaultCategory.MECHANICAL,
-                        participants=[engineer])
-    rows = {r["employee_id"]: r for r in
-            metrics.per_engineer_resolved(now - timedelta(days=1), timezone.now())}
+    complete_work_order(
+        wo, engineer2, fault_category=FaultCategory.MECHANICAL, participants=[engineer]
+    )
+    rows = {
+        r["employee_id"]: r
+        for r in metrics.per_engineer_resolved(now - timedelta(days=1), timezone.now())
+    }
     assert rows["EMP-100"]["resolved_count"] == 1  # participant
     assert rows["EMP-101"]["resolved_count"] == 1  # completer, auto-participant
 
 
 def test_resolved_credits_closer_for_duplicate(equipment, staff_user, engineer):
-    from apps.maintenance.services import close_complaint, lodge_complaint
-    from apps.maintenance.models import CloseReason
+    from apps.maintenance.services import lodge_complaint
+
     now = timezone.now()
     first = lodge_complaint(staff_user, equipment, "broken")
     dup = lodge_complaint(staff_user, equipment, "also broken")
-    close_complaint(dup, engineer, CloseReason.DUPLICATE, duplicate_of=first,
-                    close_note="dup")
-    rows = {r["employee_id"]: r for r in
-            metrics.per_engineer_resolved(now - timedelta(days=1), timezone.now())}
+    close_complaint(
+        dup, engineer, CloseReason.DUPLICATE, duplicate_of=first, close_note="dup"
+    )
+    rows = {
+        r["employee_id"]: r
+        for r in metrics.per_engineer_resolved(now - timedelta(days=1), timezone.now())
+    }
     assert rows["EMP-100"]["resolved_count"] == 1
 
 
 def test_drilldown_lists_equipment_and_remarks(equipment, staff_user, engineer):
-    from apps.maintenance.services import (
-        add_remark, complete_work_order, lodge_complaint, open_work_order, start_repair,
-    )
     from apps.maintenance.models import FaultCategory
+    from apps.maintenance.services import (
+        add_remark,
+        complete_work_order,
+        lodge_complaint,
+        open_work_order,
+        start_repair,
+    )
+
     now = timezone.now()
     lodge_complaint(staff_user, equipment, "no power")
     wo = start_repair(open_work_order(equipment, engineer), engineer)
     add_remark(wo, engineer, "ordered parts, installed, verified")
     complete_work_order(wo, engineer, fault_category=FaultCategory.ELECTRICAL)
     rows = metrics.resolved_complaints_for_engineer(
-        engineer, now - timedelta(days=1), timezone.now())
+        engineer, now - timedelta(days=1), timezone.now()
+    )
     assert len(rows) == 1
     assert rows[0]["equipment_serial"] == "SN-0001"
     assert rows[0]["resolution_type"] == "Repaired"
@@ -132,11 +148,15 @@ def test_drilldown_lists_equipment_and_remarks(equipment, staff_user, engineer):
 
 
 def test_recent_confirmations_lists_not_functional(equipment, staff_user, engineer):
+    from apps.maintenance.models import FaultCategory
     from apps.maintenance.services import (
-        complete_work_order, confirm_complaint, lodge_complaint, open_work_order,
+        complete_work_order,
+        confirm_complaint,
+        lodge_complaint,
+        open_work_order,
         start_repair,
     )
-    from apps.maintenance.models import FaultCategory
+
     now = timezone.now()
     complaint = lodge_complaint(staff_user, equipment, "no power")
     wo = start_repair(open_work_order(equipment, engineer), engineer)

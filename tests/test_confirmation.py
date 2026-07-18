@@ -1,12 +1,23 @@
 import pytest
+from django.core.exceptions import PermissionDenied
 
-from apps.maintenance.models import Complaint, FunctionalConfirmation
-from apps.maintenance.models import CloseReason, ComplaintStatus, WorkOrderOutcome, WorkOrderStatus
-from apps.maintenance.services import (
-    complete_work_order, lodge_complaint, open_work_order, start_repair,
-)
+from apps.core.exceptions import WorkOrderStateError
+from apps.core.models import AuditLog
 from apps.equipment.services import condemn_equipment
-from apps.maintenance.models import FaultCategory
+from apps.maintenance.models import (
+    CloseReason,
+    Complaint,
+    ComplaintStatus,
+    FaultCategory,
+    FunctionalConfirmation,
+)
+from apps.maintenance.services import (
+    complete_work_order,
+    confirm_complaint,
+    lodge_complaint,
+    open_work_order,
+    start_repair,
+)
 
 pytestmark = pytest.mark.django_db
 
@@ -45,13 +56,6 @@ def test_not_awaiting_after_condemnation(equipment, staff_user, engineer):
     complaint.refresh_from_db()
     assert complaint.status == ComplaintStatus.CLOSED
     assert complaint.is_awaiting_confirmation is False
-
-
-from django.core.exceptions import PermissionDenied
-
-from apps.core.exceptions import WorkOrderStateError
-from apps.core.models import AuditLog
-from apps.maintenance.services import confirm_complaint
 
 
 def _resolved_complaint(equipment, staff_user, engineer):

@@ -53,8 +53,13 @@ def engineer_resolved(request, user_id):
     window_end = timezone.now()
     window_start = window_end - timedelta(days=30)
     engineer = get_object_or_404(get_user_model(), pk=user_id)
-    rows = metrics.resolved_complaints_for_engineer(
-        engineer, window_start, window_end)
-    return render(request, "reports/engineer_resolved.html", {
-        "engineer": engineer, "rows": rows, "total": len(rows),
-    })
+    rows = metrics.resolved_complaints_for_engineer(engineer, window_start, window_end)
+    return render(
+        request,
+        "reports/engineer_resolved.html",
+        {
+            "engineer": engineer,
+            "rows": rows,
+            "total": len(rows),
+        },
+    )
