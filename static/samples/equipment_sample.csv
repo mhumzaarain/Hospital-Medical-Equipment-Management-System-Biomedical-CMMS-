@@ -1,0 +1,3 @@
+name,serial_number,department,manufacturer,vendor,model_number,purchase_date,installation_date,is_critical_asset
+Ventilator,SN-0100,ICU,Hamilton,MedServe Ltd,C2,2021-03-15,2021-04-01,yes
+Infusion Pump,SN-0101,ICU,B. Braun,,Perfusor Space,2022-01-10,,no
