@@ -5,6 +5,10 @@ Pure functions; no HTTP concerns. Views feed files in and render the results.
 
 import csv
 import io
+from dataclasses import dataclass, field
+from datetime import date, datetime
+
+from .models import Department, Equipment
 
 
 class ImportFormatError(Exception):
@@ -41,3 +45,83 @@ def parse_upload(file_obj, filename) -> list[dict]:
                 row_dict[f"column_{i}"] = cell
         rows.append(row_dict)
     return rows
+
+
+REQUIRED_COLUMNS = ("name", "serial_number", "department")
+OPTIONAL_COLUMNS = (
+    "manufacturer",
+    "vendor",
+    "model_number",
+    "purchase_date",
+    "installation_date",
+    "is_critical_asset",
+)
+DATE_COLUMNS = ("purchase_date", "installation_date")
+TRUTHY = {"true", "yes", "1"}
+
+
+@dataclass
+class RowResult:
+    line: int
+    data: dict = field(default_factory=dict)
+    department_name: str = ""
+    extra: dict = field(default_factory=dict)
+    errors: list = field(default_factory=list)
+
+    @property
+    def ok(self) -> bool:
+        return not self.errors
+
+
+def _parse_date(value: str) -> date:
+    return datetime.strptime(value, "%Y-%m-%d").date()
+
+
+def validate_rows(rows, create_missing_departments=False) -> list[RowResult]:
+    """Dry run: per-row cleaning + errors. Never touches the database beyond
+    reads. Line numbers are 2-based to match the spreadsheet."""
+    existing_serials = set(
+        Equipment.objects.values_list("serial_number", flat=True)
+    )
+    known_departments = set(Department.objects.values_list("name", flat=True))
+    seen_serials: set[str] = set()
+    results = []
+    for index, row in enumerate(rows):
+        result = RowResult(line=index + 2)
+        for column in REQUIRED_COLUMNS:
+            if not row.get(column, ""):
+                result.errors.append(f"missing required column: {column}")
+        serial = row.get("serial_number", "")
+        if serial:
+            if serial in seen_serials:
+                result.errors.append(f"duplicate serial_number in file: {serial}")
+            elif serial in existing_serials:
+                result.errors.append(f"serial_number already exists: {serial}")
+            seen_serials.add(serial)
+        department = row.get("department", "")
+        if (
+            department
+            and department not in known_departments
+            and not create_missing_departments
+        ):
+            result.errors.append(f"unknown department: {department}")
+        result.department_name = department
+
+        for key, value in row.items():
+            if key == "department":
+                continue  # resolved to a Department FK at import time
+            if key in DATE_COLUMNS:
+                if value:
+                    try:
+                        result.data[key] = _parse_date(value)
+                    except ValueError:
+                        result.errors.append(f"bad {key} (want YYYY-MM-DD): {value}")
+            elif key == "is_critical_asset":
+                result.data[key] = value.lower() in TRUTHY
+            elif key in REQUIRED_COLUMNS or key in OPTIONAL_COLUMNS:
+                if value:
+                    result.data[key] = value
+            elif value:
+                result.extra[key] = value
+        results.append(result)
+    return results

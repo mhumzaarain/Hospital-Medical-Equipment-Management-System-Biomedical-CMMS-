@@ -3,7 +3,7 @@ import io
 import pytest
 from openpyxl import Workbook
 
-from apps.equipment.importer import ImportFormatError, parse_upload
+from apps.equipment.importer import ImportFormatError, parse_upload, validate_rows
 
 
 def _csv(text: str) -> io.BytesIO:
@@ -49,3 +49,58 @@ def test_parse_row_with_more_cells_than_headers_keeps_extras():
     f = _csv("name,serial_number,department\nPump,SN-1,ICU,stray\n")
     rows = parse_upload(f, "e.csv")
     assert rows[0]["column_4"] == "stray"
+
+
+def _row(**overrides):
+    row = {"name": "Ventilator", "serial_number": "SN-10", "department": "ICU"}
+    row.update(overrides)
+    return row
+
+
+def test_validate_ok_row(department):
+    results = validate_rows([_row()])
+    assert results[0].ok and results[0].line == 2
+    assert results[0].data["name"] == "Ventilator"
+    assert results[0].department_name == "ICU"
+
+
+def test_validate_missing_required(department):
+    results = validate_rows([_row(serial_number="")])
+    assert not results[0].ok
+    assert any("serial_number" in e for e in results[0].errors)
+
+
+def test_validate_duplicate_serial_within_file(department):
+    results = validate_rows([_row(), _row(name="Copy")])
+    assert results[0].ok and not results[1].ok
+
+
+def test_validate_duplicate_serial_in_db(equipment):
+    results = validate_rows([_row(serial_number=equipment.serial_number)])
+    assert any("already exists" in e for e in results[0].errors)
+
+
+def test_validate_unknown_department_errors_unless_flag(db):
+    assert not validate_rows([_row(department="Ghost")])[0].ok
+    result = validate_rows(
+        [_row(department="Ghost")], create_missing_departments=True
+    )
+    assert result[0].ok
+
+
+def test_validate_bad_date(department):
+    results = validate_rows([_row(purchase_date="31/12/2020")])
+    assert any("purchase_date" in e for e in results[0].errors)
+
+
+def test_validate_good_optionals_and_extra(department):
+    row = _row(
+        purchase_date="2020-12-31",
+        is_critical_asset="Yes",
+        ward_notes="3rd floor",
+    )
+    r = validate_rows([row])[0]
+    assert r.ok
+    assert str(r.data["purchase_date"]) == "2020-12-31"
+    assert r.data["is_critical_asset"] is True
+    assert r.extra == {"ward_notes": "3rd floor"}
