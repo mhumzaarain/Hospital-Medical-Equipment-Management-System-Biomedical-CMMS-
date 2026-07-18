@@ -8,11 +8,12 @@ from apps.accounts.mixins import RoleRequiredMixin
 from apps.accounts.models import Roles
 from apps.core.exceptions import DomainError
 
-from . import services
+from . import importer, services
 from .forms import CondemnForm, EquipmentForm
 from .models import Equipment, EquipmentStatus
 
 ENGINEER_ROLES = (Roles.ENGINEER, Roles.ADMIN)
+SESSION_KEY = "equipment_import"
 
 
 class EquipmentListView(LoginRequiredMixin, ListView):
@@ -148,3 +149,67 @@ class EquipmentCondemnView(RoleRequiredMixin, View):
         else:
             messages.success(request, "Equipment condemned. Its history is preserved.")
         return redirect("equipment_detail", pk=pk)
+
+
+class EquipmentImportView(RoleRequiredMixin, View):
+    allowed_roles = ENGINEER_ROLES
+    template_name = "equipment/import.html"
+
+    def get(self, request):
+        return render(request, self.template_name)
+
+    def post(self, request):
+        upload = request.FILES.get("file")
+        create_missing = bool(request.POST.get("create_missing_departments"))
+        if not upload:
+            messages.error(request, "Choose a .csv or .xlsx file first.")
+            return render(request, self.template_name)
+        try:
+            rows = importer.parse_upload(upload, upload.name)
+        except importer.ImportFormatError as exc:
+            messages.error(request, str(exc))
+            return render(request, self.template_name)
+        request.session[SESSION_KEY] = {
+            "rows": rows,
+            "create_missing_departments": create_missing,
+        }
+        results = importer.validate_rows(
+            rows, create_missing_departments=create_missing
+        )
+        return render(
+            request,
+            "equipment/import_preview.html",
+            {
+                "results": results,
+                "ok_count": sum(1 for r in results if r.ok),
+                "error_count": sum(1 for r in results if not r.ok),
+                "create_missing_departments": create_missing,
+            },
+        )
+
+
+class EquipmentImportConfirmView(RoleRequiredMixin, View):
+    allowed_roles = ENGINEER_ROLES
+
+    def post(self, request):
+        stash = request.session.pop(SESSION_KEY, None)
+        if not stash:
+            messages.error(request, "Nothing to import — upload a file first.")
+            return redirect("equipment_import")
+        create_missing = stash["create_missing_departments"]
+        results = importer.validate_rows(
+            stash["rows"], create_missing_departments=create_missing
+        )
+        summary = importer.import_rows(
+            request.user, results, create_missing_departments=create_missing
+        )
+        messages.success(
+            request,
+            f"{summary.created} imported, {len(summary.skipped)} skipped.",
+        )
+        if summary.skipped:
+            details = "; ".join(
+                f"line {r.line}: {', '.join(r.errors)}" for r in summary.skipped
+            )
+            messages.warning(request, f"Skipped — {details}")
+        return redirect("equipment_list")

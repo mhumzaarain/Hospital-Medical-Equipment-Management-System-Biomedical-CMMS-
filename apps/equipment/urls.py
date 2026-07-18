@@ -13,4 +13,10 @@ urlpatterns = [
         views.EquipmentCondemnView.as_view(),
         name="equipment_condemn",
     ),
+    path("import/", views.EquipmentImportView.as_view(), name="equipment_import"),
+    path(
+        "import/confirm/",
+        views.EquipmentImportConfirmView.as_view(),
+        name="equipment_import_confirm",
+    ),
 ]
