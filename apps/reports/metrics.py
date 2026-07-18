@@ -15,6 +15,7 @@ from apps.maintenance.models import (
     Remark,
     RemarkKind,
     WorkOrder,
+    WorkOrderOutcome,
     WorkOrderStatus,
 )
 
@@ -128,14 +129,15 @@ def resolving_engineer_ids(complaint):
     return {complaint.closed_by_id} if complaint.closed_by_id else set()
 
 
-RESOLVED_REASONS = [CloseReason.RESOLVED, CloseReason.DUPLICATE, CloseReason.NO_FAULT]
-
-
 def _resolved_complaints(window_start, window_end):
     return (
         Complaint.objects.filter(
+            Q(close_reason__in=[CloseReason.DUPLICATE, CloseReason.NO_FAULT])
+            | Q(
+                close_reason=CloseReason.RESOLVED,
+                work_order__outcome=WorkOrderOutcome.REPAIRED,
+            ),
             status=ComplaintStatus.CLOSED,
-            close_reason__in=RESOLVED_REASONS,
             closed_at__range=(window_start, window_end),
         )
         .select_related("equipment", "work_order")

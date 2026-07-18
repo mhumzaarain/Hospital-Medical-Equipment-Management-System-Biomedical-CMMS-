@@ -147,6 +147,25 @@ def test_drilldown_lists_equipment_and_remarks(equipment, staff_user, engineer):
     assert any("ordered parts" in r for r in rows[0]["remarks"])
 
 
+def test_condemned_complaints_excluded_from_resolved(equipment, staff_user, engineer):
+    from apps.equipment.services import condemn_equipment
+    from apps.maintenance.services import lodge_complaint
+
+    now = timezone.now()
+    lodge_complaint(staff_user, equipment, "broken")
+    condemn_equipment(
+        equipment, engineer, remark="beyond repair", condemned_location="store"
+    )
+    # condemnation is not a "resolved" complaint — nobody is credited
+    assert metrics.per_engineer_resolved(now - timedelta(days=1), timezone.now()) == []
+    assert (
+        metrics.resolved_complaints_for_engineer(
+            engineer, now - timedelta(days=1), timezone.now()
+        )
+        == []
+    )
+
+
 def test_recent_confirmations_lists_not_functional(equipment, staff_user, engineer):
     from apps.maintenance.models import FaultCategory
     from apps.maintenance.services import (
