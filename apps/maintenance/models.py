@@ -159,6 +159,16 @@ class Complaint(NoDeleteModel):
     )
     confirmed_at = models.DateTimeField(null=True, blank=True)
 
+    @property
+    def is_awaiting_confirmation(self) -> bool:
+        return (
+            self.status == ComplaintStatus.CLOSED
+            and self.close_reason == CloseReason.RESOLVED
+            and self.functional_confirmation is None
+            and self.work_order_id is not None
+            and self.work_order.outcome == WorkOrderOutcome.REPAIRED
+        )
+
     class Meta:
         ordering = ["-created_at"]
 
