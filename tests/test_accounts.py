@@ -1,5 +1,6 @@
 import pytest
 from django.contrib.auth import get_user_model
+from django.urls import reverse
 
 pytestmark = pytest.mark.django_db
 
@@ -37,3 +38,18 @@ def test_login_page_shows_logo(client):
     # the logo renders via the base-template nav and the login card
     response = client.get("/accounts/login/")
     assert b"img/logo.png" in response.content
+
+def test_admin_link_shown_to_staff_users(client, django_user_model):
+    superadmin = django_user_model.objects.create_user(
+        username="root", password="pw", employee_id="EMP-999",
+        role="admin", is_staff=True, is_superuser=True,
+    )
+    client.force_login(superadmin)
+    response = client.get(reverse("equipment_list"))
+    assert b'href="/admin/"' in response.content
+
+
+def test_admin_link_hidden_from_non_staff(client, engineer):
+    client.force_login(engineer)
+    response = client.get(reverse("equipment_list"))
+    assert b'href="/admin/"' not in response.content

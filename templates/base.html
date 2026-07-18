@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ HOSPITAL_NAME }} CMMS{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
   <script src="{% static 'js/alpine.min.js' %}" defer></script>
 </head>
@@ -26,6 +27,9 @@
       {% if user.is_engineer_or_admin %}
         <a href="{% url 'complaint_queue' %}" class="hover:underline">Queue</a>
         <a href="{% url 'dashboard' %}" class="hover:underline">Dashboard</a>
+      {% endif %}
+      {% if user.is_staff %}
+        <a href="{% url 'admin:index' %}" class="hover:underline">Admin</a>
       {% endif %}
       <a href="{% url 'password_change' %}" class="ml-auto hover:underline">Change password</a>
       <form method="post" action="{% url 'logout' %}">
