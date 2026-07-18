@@ -1,19 +1,55 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Welcome — {{ HOSPITAL_NAME }}{% endblock %}
+{% block page_title %}Home{% endblock %}
 {% block content %}
-<div class="mx-auto mt-6 max-w-2xl rounded-lg bg-white p-10 text-center shadow">
-  <img src="{% static 'img/favicon.png' %}" alt="HEMDESK"
-       class="mx-auto mb-4 h-20 w-20 rounded">
-  <h1 class="text-2xl font-bold">Welcome to Hospital Equipment Management Desk</h1>
-  <p class="mx-auto mt-3 text-slate-600">
-    A platform to manage your hospital's medical equipment — register devices,
-    track malfunction complaints and repairs, and see it all on one dashboard.
-    Use the menu on the left to get started.
+{% now "G" as hour %}
+<div class="mt-2">
+  <h1 class="text-2xl font-bold">
+    {% if hour|add:"0" < 5 %}Working late{% elif hour|add:"0" < 12 %}Good morning{% elif hour|add:"0" < 17 %}Good afternoon{% else %}Good evening{% endif %},
+    {{ user.first_name|default:user.username }} 👋
+  </h1>
+  <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+    {{ HOSPITAL_NAME }} · signed in as {{ user.get_full_name|default:user.username }} ({{ user.employee_id }})
   </p>
-  <p class="mt-4 text-sm text-slate-500">
-    Signed in as {{ user.get_full_name|default:user.username }}
-    ({{ user.employee_id }}) · {{ HOSPITAL_NAME }}
-  </p>
+</div>
+<div class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+  <a href="{% url 'complaint_new' %}" class="card card-hover group p-5">
+    <span class="flex size-10 items-center justify-center rounded-lg bg-amber-100 text-amber-700 transition group-hover:scale-105 dark:bg-amber-500/15 dark:text-amber-300">
+      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+    </span>
+    <h2 class="mt-3 font-semibold">Report a fault</h2>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Something broken? Lodge a complaint and the biomedical team takes it from there.</p>
+  </a>
+  <a href="{% url 'equipment_list' %}" class="card card-hover group p-5">
+    <span class="flex size-10 items-center justify-center rounded-lg bg-sky-100 text-sky-700 transition group-hover:scale-105 dark:bg-sky-500/15 dark:text-sky-300">
+      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+    </span>
+    <h2 class="mt-3 font-semibold">Browse equipment</h2>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">The full device registry — status, department, history and repairs.</p>
+  </a>
+  <a href="{% url 'my_complaints' %}" class="card card-hover group p-5">
+    <span class="flex size-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 transition group-hover:scale-105 dark:bg-emerald-500/15 dark:text-emerald-300">
+      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+    </span>
+    <h2 class="mt-3 font-semibold">My complaints</h2>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Track what you've reported and confirm completed repairs.</p>
+  </a>
+  {% if user.is_engineer_or_admin %}
+  <a href="{% url 'complaint_queue' %}" class="card card-hover group p-5">
+    <span class="flex size-10 items-center justify-center rounded-lg bg-violet-100 text-violet-700 transition group-hover:scale-105 dark:bg-violet-500/15 dark:text-violet-300">
+      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+    </span>
+    <h2 class="mt-3 font-semibold">Complaint queue</h2>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Open complaints waiting for an engineer. Live-updating.</p>
+  </a>
+  <a href="{% url 'dashboard' %}" class="card card-hover group p-5">
+    <span class="flex size-10 items-center justify-center rounded-lg bg-rose-100 text-rose-700 transition group-hover:scale-105 dark:bg-rose-500/15 dark:text-rose-300">
+      <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+    </span>
+    <h2 class="mt-3 font-semibold">Dashboard</h2>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">KPIs, downtime, fault trends and engineer performance — last 30 days.</p>
+  </a>
+  {% endif %}
 </div>
 {% endblock %}
