@@ -10,6 +10,7 @@ dependencies = [
     "procrastinate[django]~=3.5",
     "gunicorn~=23.0",
     "python-dotenv~=1.0",
+    "httpx~=0.28",
 ]
 
 [dependency-groups]

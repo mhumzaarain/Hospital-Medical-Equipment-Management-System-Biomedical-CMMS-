@@ -1,3 +1,4 @@
+import json
 import os
 from pathlib import Path
 
@@ -19,6 +20,7 @@ INSTALLED_APPS = [
     "apps.core",
     "apps.equipment",
     "apps.maintenance",
+    "apps.ai",
     "apps.reports",
 ]
 
@@ -79,3 +81,16 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 HOSPITAL_NAME = os.environ.get("HOSPITAL_NAME", "Demo General Hospital")
+
+MEDIA_URL = "media/"
+MEDIA_ROOT = BASE_DIR / "media"
+
+# --- LLM backend (any OpenAI-compatible endpoint: Ollama, vLLM, hospital API)
+LLM_BASE_URL = os.environ.get("LLM_BASE_URL", "http://ollama:11434/v1")
+LLM_API_KEY = os.environ.get("LLM_API_KEY", "")
+LLM_MODEL = os.environ.get("LLM_MODEL", "llama3.2:3b")
+LLM_TIMEOUT_SECONDS = float(os.environ.get("LLM_TIMEOUT_SECONDS", "120"))
+LLM_INTERACTIVE_TIMEOUT_SECONDS = float(
+    os.environ.get("LLM_INTERACTIVE_TIMEOUT_SECONDS", "30")
+)
+LLM_EXTRA_BODY = json.loads(os.environ.get("LLM_EXTRA_BODY", "{}"))
