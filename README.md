@@ -58,6 +58,28 @@ docker compose up --build        # nginx :8080 -> gunicorn, worker, postgres
 docker compose exec web python manage.py seed_demo
 ```
 
+## Production: real user accounts
+
+Demo accounts (`seed_demo` / `DEMO_PASSWORD`) are throwaway fixtures. Real
+accounts are **never** stored in `.env` — they live in the database (passwords
+hashed) and are created inside the app.
+
+1. **Create the first admin** (one time), either:
+   - Interactive (standard): `python manage.py createsuperuser` — prompts for
+     the credentials; nothing is written to a file.
+   - Automated/container: set `SUPERUSER_*` in your private `.env` (see
+     `.env.example`) and run `python manage.py create_superuser`. It is
+     idempotent — safe to run on every deploy; it skips if a superuser already
+     exists or the variables are unset. Use `--force` to reset the password.
+2. **Create every other user** via the Django admin at `/admin/` — set each
+   person's username, role, employee ID, and an initial password.
+3. **Each user changes their own password** at `/accounts/password_change/`
+   (the "Change password" link in the top nav). Admins can also reset a
+   password from `/admin/`.
+
+So `.env` holds infrastructure config plus (optionally) the single bootstrap
+admin password; all real people are managed in the app.
+
 ## Docs
 
 - Design spec: `docs/superpowers/specs/`

@@ -21,7 +21,8 @@
         <a href="{% url 'complaint_queue' %}" class="hover:underline">Queue</a>
         <a href="{% url 'dashboard' %}" class="hover:underline">Dashboard</a>
       {% endif %}
-      <form method="post" action="{% url 'logout' %}" class="ml-auto">
+      <a href="{% url 'password_change' %}" class="ml-auto hover:underline">Change password</a>
+      <form method="post" action="{% url 'logout' %}">
         {% csrf_token %}
         <button class="text-sky-200 hover:underline">
           Log out ({{ user.employee_id }})
