@@ -34,6 +34,10 @@ def parse_upload(file_obj, filename) -> list[dict]:
     rows = []
     for raw_row in table[1:]:
         cells = ["" if c is None else str(c).strip() for c in raw_row]
-        cells += [""] * (len(headers) - len(cells))
-        rows.append(dict(zip(headers, cells)))
+        row_dict = dict(zip(headers, cells[:len(headers)]))
+        # Add extra cells beyond header count with synthetic keys (column_N)
+        for i, cell in enumerate(cells[len(headers):], start=len(headers) + 1):
+            if cell:  # Only add non-empty extra cells
+                row_dict[f"column_{i}"] = cell
+        rows.append(row_dict)
     return rows
