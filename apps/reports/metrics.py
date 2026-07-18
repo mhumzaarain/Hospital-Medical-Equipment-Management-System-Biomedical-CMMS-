@@ -227,3 +227,30 @@ def recent_confirmations(window_start, window_end):
         }
         for c in rows
     ]
+
+
+def month_metrics(month):
+    """All aggregates for one calendar month, JSON-serializable (spec §3).
+    `month` is the first day of the month."""
+    import calendar
+    from datetime import datetime, timedelta
+
+    from django.utils import timezone as tz
+
+    start = tz.make_aware(datetime(month.year, month.month, 1))
+    last_day = calendar.monthrange(month.year, month.month)[1]
+    end = tz.make_aware(datetime(month.year, month.month, last_day)) + timedelta(
+        days=1
+    )
+    downtime = critical_downtime_by_department(start, end)
+    return {
+        "month": f"{month:%Y-%m}",
+        "downtime_by_department": {k: round(v, 1) for k, v in downtime.items()},
+        "complaints_per_department": complaints_per_department(start, end),
+        "most_complained_devices": most_complained_devices(start, end),
+        "fault_category_counts": fault_category_counts(start, end),
+        "repairs_completed": repairs_completed_count(start, end),
+        "open_workorders": open_workorders_count(),
+        "delayed_repairs": delayed_repairs(start, end),
+        "per_engineer_resolved": per_engineer_resolved(start, end),
+    }
