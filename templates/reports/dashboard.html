@@ -44,10 +44,22 @@
     </ul>
   </div>
   <div class="rounded bg-white p-4 shadow">
-    <h2 class="mb-2 font-semibold">Engineer activity</h2>
+    <h2 class="mb-1 font-semibold">Engineer activity <span class="font-normal
+      text-slate-500">· last 30 days</span></h2>
+    <p class="mb-3 text-xs text-slate-500">
+      <strong>Repairs worked on</strong>: completed work orders this engineer
+      took part in (a shared repair credits everyone involved).
+      <strong>Duplicates / false alarms closed</strong>: complaints they
+      manually dismissed as a duplicate or "no fault found". Complaints resolved
+      by finishing a repair are counted under that repair, not here.
+    </p>
     <table class="w-full text-sm">
-      <thead><tr class="border-b text-left"><th class="py-1">Engineer</th>
-        <th class="py-1">Repairs</th><th class="py-1">Complaints closed</th></tr></thead>
+      <thead><tr class="border-b text-left">
+        <th class="py-1">Engineer</th>
+        <th class="py-1" title="Completed work orders this engineer took part in (last 30 days). Shared repairs credit everyone involved.">
+          Repairs worked&nbsp;on</th>
+        <th class="py-1" title="Complaints manually closed as a duplicate or no-fault. Complaints resolved by completing a repair are not counted here.">
+          Duplicates / false alarms closed</th></tr></thead>
       <tbody>
         {% for e in engineers %}
         <tr class="border-b"><td class="py-1">{{ e.name }}
