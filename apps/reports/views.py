@@ -6,6 +6,8 @@ from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
+from apps.ai import services as ai_services
+
 from . import metrics
 
 
@@ -54,6 +56,7 @@ def dashboard(request):
         "faults_json": json.dumps(
             {"labels": list(faults.keys()), "values": list(faults.values())}
         ),
+        "high_risk": ai_services.high_risk_devices(),
     }
     return render(request, "reports/dashboard.html", context)
 
