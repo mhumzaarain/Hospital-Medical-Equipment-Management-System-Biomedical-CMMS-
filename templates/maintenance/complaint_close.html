@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Close Complaint #{{ complaint.pk }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-xl rounded bg-white p-6 shadow">
+  <h1 class="mb-2 text-xl font-bold">Close Complaint #{{ complaint.pk }}</h1>
+  <p class="mb-4 text-sm text-slate-600">
+    {{ complaint.equipment }} — “{{ complaint.description|truncatechars:120 }}”
+    by {{ complaint.reporter }} ({{ complaint.created_at }})
+  </p>
+  <form method="post" class="space-y-4">
+    {% csrf_token %}
+    {% for error in form.non_field_errors %}
+      <p class="text-sm text-red-700">{{ error }}</p>{% endfor %}
+    <div>
+      <label class="mb-1 block text-sm font-medium">Reason</label>
+      {{ form.close_reason }}
+    </div>
+    <div>
+      <label class="mb-1 block text-sm font-medium">Original complaint (if duplicate)</label>
+      {{ form.duplicate_of }}
+    </div>
+    <div>
+      <label class="mb-1 block text-sm font-medium">Note</label>
+      {{ form.close_note }}
+      <p class="text-xs text-slate-500">
+        e.g. “Already reported by Nurse Khan, complaint #482.”</p>
+    </div>
+    <button class="rounded bg-slate-700 px-4 py-2 text-white">Close complaint</button>
+  </form>
+</div>
+{% endblock %}

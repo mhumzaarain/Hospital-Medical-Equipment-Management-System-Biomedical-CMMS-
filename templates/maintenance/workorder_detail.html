@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}WO #{{ wo.pk }}{% endblock %}
+{% block content %}
+<div class="mb-4 flex items-start justify-between">
+  <div>
+    <h1 class="text-2xl font-bold">Work Order #{{ wo.pk }}</h1>
+    <p class="text-slate-600">
+      <a class="text-sky-700 hover:underline"
+         href="{% url 'equipment_detail' wo.equipment.pk %}">{{ wo.equipment }}</a>
+      · {{ wo.equipment.department }}</p>
+  </div>
+  <span class="rounded px-3 py-1 text-sm
+    {% if wo.status == 'completed' %}bg-emerald-100 text-emerald-800
+    {% elif wo.status == 'cancelled' %}bg-slate-200 text-slate-700
+    {% elif wo.status == 'in_progress' %}bg-amber-100 text-amber-800
+    {% else %}bg-sky-100 text-sky-800{% endif %}">
+    {{ wo.get_status_display }}</span>
+</div>
+<div class="grid gap-6 md:grid-cols-2">
+  <div class="rounded bg-white p-4 shadow text-sm space-y-1">
+    <h2 class="mb-2 font-semibold">Timeline</h2>
+    <div><span class="text-slate-500">Opened:</span> {{ wo.opened_at }} by {{ wo.opened_by }}</div>
+    <div><span class="text-slate-500">Repair started:</span> {{ wo.repair_started_at|default:"—" }}</div>
+    <div><span class="text-slate-500">Repair completed:</span> {{ wo.repair_completed_at|default:"—" }}</div>
+    {% if wo.closed_by %}<div><span class="text-slate-500">Closed by:</span> {{ wo.closed_by }}</div>{% endif %}
+    {% if wo.outcome %}<div><span class="text-slate-500">Outcome:</span> {{ wo.get_outcome_display }}</div>{% endif %}
+    {% if wo.fault_category %}<div><span class="text-slate-500">Fault:</span> {{ wo.get_fault_category_display }}</div>{% endif %}
+    <div><span class="text-slate-500">Participants:</span>
+      {% for p in wo.participants.all %}{{ p }}{% if not forloop.last %}, {% endif %}
+      {% empty %}—{% endfor %}</div>
+    {% if can_engineer and wo.is_active %}
+    <div class="mt-3 flex flex-wrap gap-2">
+      {% if wo.status == 'open' %}
+      <form method="post" action="{% url 'workorder_start' wo.pk %}">{% csrf_token %}
+        <button class="rounded bg-amber-600 px-3 py-1.5 text-white">Start repair</button>
+      </form>
+      {% endif %}
+      {% if wo.status == 'in_progress' %}
+      <a href="{% url 'workorder_complete' wo.pk %}"
+         class="rounded bg-emerald-700 px-3 py-1.5 text-white">Complete…</a>
+      {% endif %}
+      <form method="post" action="{% url 'workorder_cancel' wo.pk %}">{% csrf_token %}
+        <input type="hidden" name="note" value="No fault found.">
+        <button class="rounded bg-slate-600 px-3 py-1.5 text-white">
+          Cancel (no fault)</button>
+      </form>
+      <form method="post" action="{% url 'workorder_join' wo.pk %}">{% csrf_token %}
+        <button class="rounded bg-sky-700 px-3 py-1.5 text-white">
+          I'm working on this</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  <div class="rounded bg-white p-4 shadow">
+    <h2 class="mb-2 font-semibold">Attached Complaints ({{ wo.complaints.count }})</h2>
+    <ul class="space-y-2 text-sm">
+      {% for c in wo.complaints.all %}
+      <li class="border-l-2 border-slate-300 pl-3">
+        #{{ c.pk }} — “{{ c.description|truncatechars:100 }}”
+        <div class="text-slate-500">{{ c.reporter }} · {{ c.created_at }}
+          · {{ c.get_status_display }}</div>
+        {% if c.is_awaiting_confirmation %}
+        <div class="text-amber-700">Awaiting staff confirmation</div>
+        {% elif c.functional_confirmation == 'functional' %}
+        <div class="text-emerald-700">Staff confirmed: Functional ✓</div>
+        {% elif c.functional_confirmation == 'not_functional' %}
+        <div class="font-medium text-red-700">Staff reported: NOT functional ✗</div>
+        {% endif %}
+      </li>
+      {% empty %}<li class="text-slate-500">Engineer-initiated (no complaints).</li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+<div class="mt-6 rounded bg-white p-4 shadow">
+  <h2 class="mb-2 font-semibold">Remarks</h2>
+  <ul class="mb-4 space-y-2 text-sm">
+    {% for remark in wo.remarks.all %}
+    <li class="rounded p-2
+        {% if remark.kind == 'delay' %}bg-amber-50 border border-amber-200
+        {% elif remark.kind == 'system' %}bg-slate-50 text-slate-600
+        {% else %}bg-sky-50{% endif %}">
+      <span class="text-slate-500">{{ remark.created_at }} · {{ remark.author }}
+        {% if remark.kind != 'note' %}· {{ remark.get_kind_display }}{% endif %}</span>
+      <div>{{ remark.text }}</div>
+    </li>
+    {% empty %}<li class="text-slate-500">No remarks yet.</li>{% endfor %}
+  </ul>
+  {% if can_engineer %}
+  <form method="post" action="{% url 'workorder_remark' wo.pk %}" class="space-y-2">
+    {% csrf_token %}
+    {{ remark_form.text }}
+    <div class="flex items-center gap-3">
+      {{ remark_form.kind }}
+      <button class="rounded bg-sky-800 px-3 py-1.5 text-white">Add remark</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

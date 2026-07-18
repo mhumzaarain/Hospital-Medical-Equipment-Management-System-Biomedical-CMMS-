@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Complaint Queue{% endblock %}
+{% block content %}
+<h1 class="mb-4 text-2xl font-bold">Complaint Queue</h1>
+<p class="mb-2 text-sm text-slate-500">Auto-refreshes every 10 seconds.</p>
+<table class="w-full rounded bg-white shadow text-sm">
+  <thead><tr class="border-b text-left">
+    <th class="p-3">#</th><th class="p-3">Equipment</th><th class="p-3">Department</th>
+    <th class="p-3">Description</th><th class="p-3">Reporter</th>
+    <th class="p-3">Received</th><th class="p-3">State</th><th class="p-3"></th>
+  </tr></thead>
+  <tbody hx-get="{% url 'complaint_queue_rows' %}" hx-trigger="every 10s"
+         hx-swap="innerHTML">
+    {% include "maintenance/_queue_rows.html" %}
+  </tbody>
+</table>
+{% endblock %}

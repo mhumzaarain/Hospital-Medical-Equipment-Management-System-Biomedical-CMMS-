@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ equipment.name }}{% endblock %}
+{% block content %}
+<div class="mb-4 flex items-start justify-between">
+  <div>
+    <h1 class="text-2xl font-bold">{{ equipment.name }} {{ equipment.model_number }}</h1>
+    <p class="font-mono text-slate-600">{{ equipment.serial_number }}</p>
+  </div>
+  <span class="rounded px-3 py-1 text-sm
+    {% if equipment.status == 'working' %}bg-emerald-100 text-emerald-800
+    {% elif equipment.status == 'in_repair' %}bg-amber-100 text-amber-800
+    {% else %}bg-red-100 text-red-800{% endif %}">
+    {{ equipment.get_status_display }}</span>
+</div>
+<div class="grid gap-6 md:grid-cols-2">
+  <div class="rounded bg-white p-4 shadow">
+    <h2 class="mb-2 font-semibold">Details</h2>
+    <dl class="text-sm space-y-1">
+      <div><dt class="inline text-slate-500">Manufacturer:</dt> <dd class="inline">{{ equipment.manufacturer }}</dd></div>
+      <div><dt class="inline text-slate-500">Vendor:</dt> <dd class="inline">{{ equipment.vendor|default:"—" }}</dd></div>
+      <div><dt class="inline text-slate-500">Department:</dt> <dd class="inline">{{ equipment.department }}</dd></div>
+      <div><dt class="inline text-slate-500">Critical asset:</dt> <dd class="inline">{{ equipment.is_critical_asset|yesno }}</dd></div>
+      <div><dt class="inline text-slate-500">Purchased:</dt> <dd class="inline">{{ equipment.purchase_date|default:"—" }}</dd></div>
+      <div><dt class="inline text-slate-500">Installed:</dt> <dd class="inline">{{ equipment.installation_date|default:"—" }}</dd></div>
+      <div><dt class="inline text-slate-500">Repairs completed:</dt>
+        <dd class="inline">{{ completed_repair_count }}</dd></div>
+      {% if equipment.status == 'condemned' %}
+      <div><dt class="inline text-slate-500">Condemned:</dt>
+        <dd class="inline">{{ equipment.condemned_at }} — {{ equipment.condemned_location }}</dd></div>
+      {% endif %}
+    </dl>
+    {% if can_engineer and equipment.status != 'condemned' %}
+    <div class="mt-4 flex gap-2">
+      <a href="{% url 'equipment_edit' equipment.pk %}"
+         class="rounded bg-slate-700 px-3 py-1.5 text-sm text-white">Edit</a>
+      <a href="{% url 'equipment_condemn' equipment.pk %}"
+         class="rounded bg-red-700 px-3 py-1.5 text-sm text-white">Condemn…</a>
+      <form method="post" action="{% url 'workorder_open' equipment.pk %}">
+        {% csrf_token %}
+        <button class="rounded bg-amber-600 px-3 py-1.5 text-sm text-white">
+          Open Work Order</button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+  <div class="rounded bg-white p-4 shadow">
+    <h2 class="mb-2 font-semibold">Status History</h2>
+    <ul class="space-y-2 text-sm">
+      {% for event in status_events %}
+      <li class="border-l-2 border-sky-300 pl-3">
+        <span class="text-slate-500">{{ event.created_at }}</span> —
+        {{ event.get_old_status_display }} → {{ event.get_new_status_display }}
+        by {{ event.actor }}
+        {% if event.remark %}<div class="text-slate-600">“{{ event.remark }}”</div>{% endif %}
+      </li>
+      {% empty %}<li class="text-slate-500">No status changes yet.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+<div class="mt-6 rounded bg-white p-4 shadow">
+  <h2 class="mb-2 font-semibold">Work Orders</h2>
+  {% for wo in work_orders %}
+  <div class="mb-3 border-b pb-3 text-sm">
+    {% if can_engineer %}
+    <a class="font-medium text-sky-700 hover:underline"
+       href="{% url 'workorder_detail' wo.pk %}">WO #{{ wo.pk }}</a>
+    {% else %}
+    <span class="font-medium">WO #{{ wo.pk }}</span>
+    {% endif %}
+    — {{ wo.get_status_display }}{% if wo.outcome %} ({{ wo.get_outcome_display }}){% endif %}
+    {% if wo.fault_category %} · {{ wo.get_fault_category_display }}{% endif %}
+    · opened {{ wo.opened_at|date }}
+  </div>
+  {% empty %}<p class="text-sm text-slate-500">No repairs recorded.</p>{% endfor %}
+</div>
+{% endblock %}

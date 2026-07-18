@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="mb-4 text-2xl font-bold">Dashboard <span class="text-base font-normal
+  text-slate-500">last 30 days</span></h1>
+<div class="mb-6 grid gap-4 sm:grid-cols-2">
+  <div class="rounded bg-white p-4 shadow">
+    <div class="text-3xl font-bold">{{ repairs_completed }}</div>
+    <div class="text-sm text-slate-500">Repairs completed</div>
+  </div>
+  <div class="rounded bg-white p-4 shadow">
+    <div class="text-3xl font-bold">{{ open_workorders }}</div>
+    <div class="text-sm text-slate-500">Work orders open right now</div>
+  </div>
+</div>
+<div class="grid gap-6 md:grid-cols-2">
+  <div class="rounded bg-white p-4 shadow">
+    <h2 class="mb-2 font-semibold">Critical-asset downtime (hours, by department)</h2>
+    <canvas id="chart-downtime"></canvas>
+  </div>
+  <div class="rounded bg-white p-4 shadow">
+    <h2 class="mb-2 font-semibold">Complaints per department</h2>
+    <canvas id="chart-complaints"></canvas>
+  </div>
+  <div class="rounded bg-white p-4 shadow">
+    <h2 class="mb-2 font-semibold">Most-complained devices</h2>
+    <canvas id="chart-devices"></canvas>
+  </div>
+  <div class="rounded bg-white p-4 shadow">
+    <h2 class="mb-2 font-semibold">Fault categories (completed repairs)</h2>
+    <canvas id="chart-faults"></canvas>
+  </div>
+</div>
+<div class="mt-6 grid gap-6 md:grid-cols-2">
+  <div class="rounded bg-white p-4 shadow">
+    <h2 class="mb-2 font-semibold">Repairs with delay remarks</h2>
+    <ul class="space-y-2 text-sm">
+      {% for d in delayed %}
+      <li><a class="text-sky-700 hover:underline"
+             href="{% url 'workorder_detail' d.wo_id %}">WO #{{ d.wo_id }}</a>
+        — {{ d.equipment }}<div class="text-slate-500">“{{ d.latest_delay_note }}”</div></li>
+      {% empty %}<li class="text-slate-500">No delays recorded. 🎉</li>{% endfor %}
+    </ul>
+  </div>
+  <div class="rounded bg-white p-4 shadow">
+    <h2 class="mb-1 font-semibold">Complaints resolved <span class="font-normal
+      text-slate-500">· last 30 days · per engineer</span></h2>
+    <p class="mb-3 text-xs text-slate-500">
+      Complaints an engineer helped resolve — by completing the repair (credits
+      everyone who worked on it) or by closing a duplicate / false alarm. Click a
+      number to see which equipment and the remarks.
+    </p>
+    <table class="w-full text-sm">
+      <thead><tr class="border-b text-left">
+        <th class="py-1">Engineer</th>
+        <th class="py-1">Complaints resolved</th></tr></thead>
+      <tbody>
+        {% for e in resolved %}
+        <tr class="border-b"><td class="py-1">{{ e.name }}
+          <span class="text-slate-500">({{ e.employee_id }})</span></td>
+          <td class="py-1"><a class="text-sky-700 hover:underline"
+            href="{% url 'engineer_resolved' e.user_id %}">{{ e.resolved_count }}</a></td></tr>
+        {% empty %}<tr><td colspan="2" class="py-2 text-slate-500">
+          No complaints resolved in this window.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="rounded bg-white p-4 shadow">
+    <h2 class="mb-2 font-semibold">Recent staff confirmations <span
+      class="font-normal text-slate-500">· last 30 days</span></h2>
+    <ul class="space-y-2 text-sm">
+      {% for c in confirmations %}
+      <li class="rounded p-2 {% if c.is_functional %}bg-emerald-50
+          {% else %}bg-red-50 border border-red-200{% endif %}">
+        {% if c.work_order_id %}<a class="text-sky-700 hover:underline"
+          href="{% url 'workorder_detail' c.work_order_id %}">WO #{{ c.work_order_id }}</a>
+        {% endif %} — {{ c.equipment }}:
+        {% if c.is_functional %}<span class="text-emerald-800">Functional ✓</span>
+        {% else %}<span class="font-medium text-red-800">NOT functional ✗</span>{% endif %}
+        <span class="text-slate-500">· {{ c.confirmed_at|timesince }} ago</span>
+      </li>
+      {% empty %}<li class="text-slate-500">No confirmations yet.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{{ downtime_json|json_script:"downtime-data" }}
+{{ complaints_json|json_script:"complaints-data" }}
+{{ devices_json|json_script:"devices-data" }}
+{{ faults_json|json_script:"faults-data" }}
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/chart.umd.js' %}"></script>
+<script>
+  function draw(canvasId, scriptId, type, color) {
+    const data = JSON.parse(JSON.parse(
+      document.getElementById(scriptId).textContent));
+    new Chart(document.getElementById(canvasId), {
+      type: type,
+      data: { labels: data.labels,
+              datasets: [{ data: data.values, backgroundColor: color }] },
+      options: { plugins: { legend: { display: type === 'doughnut' } },
+                 indexAxis: type === 'bar-h' ? 'y' : 'x' },
+    });
+  }
+  draw('chart-downtime', 'downtime-data', 'bar', '#b91c1c');
+  draw('chart-complaints', 'complaints-data', 'bar', '#0369a1');
+  draw('chart-devices', 'devices-data', 'bar', '#b45309');
+  draw('chart-faults', 'faults-data', 'doughnut',
+       ['#0369a1', '#b45309', '#15803d', '#b91c1c', '#7c3aed', '#0f766e',
+        '#be185d', '#64748b']);
+</script>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% for eq in results %}
+<button type="button"
+        class="block w-full border-b px-3 py-2 text-left hover:bg-sky-50"
+        @click="select({{ eq.pk }}, '{{ eq.name|escapejs }}',
+                '{{ eq.model_number|escapejs }}', '{{ eq.serial_number|escapejs }}',
+                '{{ eq.department|escapejs }}')">
+  <span class="font-medium">{{ eq.name }}</span>
+  <span class="text-slate-500">{{ eq.model_number }} ·
+    <span class="font-mono">{{ eq.serial_number }}</span> · {{ eq.department }}</span>
+</button>
+{% empty %}
+<div class="px-3 py-2 text-slate-500">No matching equipment.</div>
+{% endfor %}

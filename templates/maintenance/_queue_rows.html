@@ -1,0 +1,35 @@
+{% for c in complaints %}
+<tr class="border-b hover:bg-slate-50">
+  <td class="p-3">{{ c.pk }}</td>
+  <td class="p-3">
+    <a class="text-sky-700 hover:underline"
+       href="{% url 'equipment_detail' c.equipment.pk %}">{{ c.equipment.name }}</a>
+    <span class="font-mono text-slate-500">{{ c.equipment.serial_number }}</span>
+  </td>
+  <td class="p-3">{{ c.equipment.department }}</td>
+  <td class="p-3">{{ c.description|truncatechars:60 }}</td>
+  <td class="p-3">{{ c.reporter.get_full_name|default:c.reporter.username }}
+    <span class="text-slate-500">({{ c.reporter.employee_id }})</span></td>
+  <td class="p-3">{{ c.created_at|timesince }} ago</td>
+  <td class="p-3">
+    {% if c.work_order %}
+      <a class="text-amber-700 hover:underline"
+         href="{% url 'workorder_detail' c.work_order.pk %}">WO #{{ c.work_order.pk }}</a>
+    {% else %}<span class="text-slate-500">unassigned</span>{% endif %}
+  </td>
+  <td class="p-3 whitespace-nowrap">
+    {% if not c.work_order %}
+    <form method="post" action="{% url 'workorder_open' c.equipment.pk %}"
+          class="inline">{% csrf_token %}
+      <button class="rounded bg-amber-600 px-2 py-1 text-xs text-white">
+        Open WO</button>
+    </form>
+    {% endif %}
+    <a href="{% url 'complaint_close' c.pk %}"
+       class="rounded bg-slate-600 px-2 py-1 text-xs text-white">Close…</a>
+  </td>
+</tr>
+{% empty %}
+<tr><td colspan="8" class="p-6 text-center text-slate-500">
+  No open complaints. 🎉</td></tr>
+{% endfor %}
