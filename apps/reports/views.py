@@ -19,9 +19,23 @@ def dashboard(request):
     complaints = metrics.complaints_per_department(window_start, window_end)
     devices = metrics.most_complained_devices(window_start, window_end)
     faults = metrics.fault_category_counts(window_start, window_end)
+    prev_start = window_start - timedelta(days=30)
+    repairs_completed = metrics.repairs_completed_count(window_start, window_end)
+    repairs_prev = metrics.repairs_completed_count(prev_start, window_start)
+    downtime_hours = round(sum(downtime.values()), 1)
+    downtime_prev = round(
+        sum(
+            metrics.critical_downtime_by_department(prev_start, window_start).values()
+        ),
+        1,
+    )
     context = {
-        "repairs_completed": metrics.repairs_completed_count(window_start, window_end),
+        "repairs_completed": repairs_completed,
+        "repairs_delta": repairs_completed - repairs_prev,
         "open_workorders": metrics.open_workorders_count(),
+        "working_percent": metrics.equipment_working_percent(),
+        "downtime_hours": downtime_hours,
+        "downtime_delta": round(downtime_hours - downtime_prev, 1),
         "delayed": metrics.delayed_repairs(window_start, window_end),
         "resolved": metrics.per_engineer_resolved(window_start, window_end),
         "confirmations": metrics.recent_confirmations(window_start, window_end),

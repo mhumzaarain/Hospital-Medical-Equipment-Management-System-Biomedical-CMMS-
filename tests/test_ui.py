@@ -65,3 +65,27 @@ def test_complaint_age_hours(staff_user, equipment):
 
     c = lodge_complaint(staff_user, equipment, "no power")
     assert 0 <= c.age_hours < 1
+
+
+def test_equipment_working_percent(make_equipment):
+    from apps.reports import metrics
+
+    make_equipment(serial_number="SN-W1", status="working")
+    make_equipment(serial_number="SN-W2", status="working")
+    make_equipment(serial_number="SN-R1", status="in_repair")
+    make_equipment(serial_number="SN-C1", status="condemned")
+    assert metrics.equipment_working_percent() == 67  # 2 of 3 non-condemned
+
+
+def test_equipment_working_percent_empty(db):
+    from apps.reports import metrics
+
+    assert metrics.equipment_working_percent() is None
+
+
+def test_dashboard_kpi_context(client, engineer):
+    client.force_login(engineer)
+    response = client.get(reverse("dashboard"))
+    assert response.status_code == 200
+    for key in ("working_percent", "downtime_hours", "repairs_delta", "downtime_delta"):
+        assert key in response.context
