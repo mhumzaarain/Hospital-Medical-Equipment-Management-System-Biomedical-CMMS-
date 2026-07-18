@@ -14,9 +14,9 @@
 <nav class="bg-sky-900 text-white">
   <div class="mx-auto max-w-6xl px-4 py-3 flex items-center gap-6">
     <a href="{% url 'home' %}" class="flex items-center gap-2">
-      <img src="{% static 'img/favicon.png' %}" alt="{{ HOSPITAL_NAME }}"
+      <img src="{% static 'img/favicon.png' %}" alt="HEMDESK"
            class="h-9 w-9 rounded">
-      <span class="font-semibold sm:text-lg">{{ HOSPITAL_NAME }}</span>
+      <span class="font-bold tracking-wide sm:text-lg">HEMDESK</span>
     </a>
     {% if user.is_authenticated %}
       <a href="{% url 'equipment_list' %}" class="hover:underline">Equipment</a>
@@ -29,13 +29,16 @@
       {% if user.is_staff %}
         <a href="{% url 'admin:index' %}" class="hover:underline">Admin</a>
       {% endif %}
-      <a href="{% url 'password_change' %}" class="ml-auto hover:underline">Change password</a>
+      <span class="ml-auto hidden text-sm text-sky-200 lg:inline">{{ HOSPITAL_NAME }}</span>
+      <a href="{% url 'password_change' %}" class="hover:underline">Change password</a>
       <form method="post" action="{% url 'logout' %}">
         {% csrf_token %}
         <button class="text-sky-200 hover:underline">
           Log out ({{ user.employee_id }})
         </button>
       </form>
+    {% else %}
+      <a href="{% url 'login' %}" class="ml-auto hover:underline">Log in</a>
     {% endif %}
   </div>
 </nav>

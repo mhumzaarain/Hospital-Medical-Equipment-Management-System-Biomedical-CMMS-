@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Welcome — {{ HOSPITAL_NAME }}{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-4xl">
+  <div class="rounded-lg bg-white p-8 text-center shadow">
+    <img src="{% static 'img/favicon.png' %}" alt="HEMDESK"
+         class="mx-auto mb-4 h-16 w-16 rounded">
+    <h1 class="text-2xl font-bold">Welcome to Hospital Equipment Management Desk</h1>
+    <p class="mx-auto mt-2 max-w-2xl text-slate-600">
+      A platform to manage your hospital's medical equipment — register devices,
+      track malfunction complaints and repairs, and see it all on one dashboard.
+    </p>
+    <p class="mt-2 text-sm text-slate-500">
+      Signed in as {{ user.get_full_name|default:user.username }}
+      ({{ user.employee_id }}) · {{ HOSPITAL_NAME }}
+    </p>
+  </div>
+
+  <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    <a href="{% url 'equipment_list' %}"
+       class="rounded-lg bg-white p-5 shadow transition hover:shadow-md">
+      <div class="font-semibold text-sky-800">Equipment registry</div>
+      <div class="mt-1 text-sm text-slate-500">Browse and search all devices.</div>
+    </a>
+    <a href="{% url 'complaint_new' %}"
+       class="rounded-lg bg-white p-5 shadow transition hover:shadow-md">
+      <div class="font-semibold text-sky-800">Lodge a complaint</div>
+      <div class="mt-1 text-sm text-slate-500">Report a malfunctioning device.</div>
+    </a>
+    <a href="{% url 'my_complaints' %}"
+       class="rounded-lg bg-white p-5 shadow transition hover:shadow-md">
+      <div class="font-semibold text-sky-800">My complaints</div>
+      <div class="mt-1 text-sm text-slate-500">Track the complaints you lodged.</div>
+    </a>
+    {% if user.is_engineer_or_admin %}
+    <a href="{% url 'complaint_queue' %}"
+       class="rounded-lg bg-white p-5 shadow transition hover:shadow-md">
+      <div class="font-semibold text-sky-800">Complaint queue</div>
+      <div class="mt-1 text-sm text-slate-500">Incoming complaints to work on.</div>
+    </a>
+    <a href="{% url 'dashboard' %}"
+       class="rounded-lg bg-white p-5 shadow transition hover:shadow-md">
+      <div class="font-semibold text-sky-800">Dashboard</div>
+      <div class="mt-1 text-sm text-slate-500">Downtime, repairs, and analytics.</div>
+    </a>
+    {% endif %}
+    {% if user.is_staff %}
+    <a href="{% url 'admin:index' %}"
+       class="rounded-lg bg-white p-5 shadow transition hover:shadow-md">
+      <div class="font-semibold text-sky-800">Admin</div>
+      <div class="mt-1 text-sm text-slate-500">Manage users, departments, settings.</div>
+    </a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

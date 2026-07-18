@@ -124,11 +124,11 @@ def test_join_workorder(client, engineer, engineer2, equipment):
     assert engineer2 in wo.participants.all()
 
 
-def test_home_redirects_by_role(client, staff_user, engineer):
+def test_home_shows_landing_page(client, staff_user):
     client.force_login(staff_user)
-    assert client.get(reverse("home")).url == reverse("my_complaints")
-    client.force_login(engineer)
-    assert client.get(reverse("home")).url == reverse("complaint_queue")
+    response = client.get(reverse("home"))
+    assert response.status_code == 200
+    assert b"Welcome to Hospital Equipment Management Desk" in response.content
 
 
 def test_staff_confirms_via_view(client, staff_user, engineer, equipment):
