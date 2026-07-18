@@ -45,3 +45,48 @@ def test_not_awaiting_after_condemnation(equipment, staff_user, engineer):
     complaint.refresh_from_db()
     assert complaint.status == ComplaintStatus.CLOSED
     assert complaint.is_awaiting_confirmation is False
+
+
+from django.core.exceptions import PermissionDenied
+
+from apps.core.exceptions import WorkOrderStateError
+from apps.core.models import AuditLog
+from apps.maintenance.services import confirm_complaint
+
+
+def _resolved_complaint(equipment, staff_user, engineer):
+    complaint = lodge_complaint(staff_user, equipment, "broken")
+    wo = start_repair(open_work_order(equipment, engineer), engineer)
+    complete_work_order(wo, engineer, fault_category=FaultCategory.ELECTRICAL)
+    complaint.refresh_from_db()
+    return complaint
+
+
+def test_reporter_confirms_functional(equipment, staff_user, engineer):
+    complaint = _resolved_complaint(equipment, staff_user, engineer)
+    confirm_complaint(complaint, staff_user, is_functional=True)
+    complaint.refresh_from_db()
+    assert complaint.functional_confirmation == FunctionalConfirmation.FUNCTIONAL
+    assert complaint.confirmed_at is not None
+    assert complaint.is_awaiting_confirmation is False
+    assert AuditLog.objects.filter(verb="complaint.confirmed").count() == 1
+
+
+def test_reporter_confirms_not_functional(equipment, staff_user, engineer):
+    complaint = _resolved_complaint(equipment, staff_user, engineer)
+    confirm_complaint(complaint, staff_user, is_functional=False)
+    complaint.refresh_from_db()
+    assert complaint.functional_confirmation == FunctionalConfirmation.NOT_FUNCTIONAL
+
+
+def test_non_reporter_cannot_confirm(equipment, staff_user, engineer, admin_user):
+    complaint = _resolved_complaint(equipment, staff_user, engineer)
+    with pytest.raises(PermissionDenied):
+        confirm_complaint(complaint, admin_user, is_functional=True)
+
+
+def test_cannot_confirm_twice(equipment, staff_user, engineer):
+    complaint = _resolved_complaint(equipment, staff_user, engineer)
+    confirm_complaint(complaint, staff_user, is_functional=True)
+    with pytest.raises(WorkOrderStateError):
+        confirm_complaint(complaint, staff_user, is_functional=False)

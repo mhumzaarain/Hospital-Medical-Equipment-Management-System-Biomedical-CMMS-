@@ -1,3 +1,4 @@
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.utils import timezone
 
@@ -12,6 +13,7 @@ from .models import (
     Complaint,
     ComplaintStatus,
     FaultCategory,
+    FunctionalConfirmation,
     Remark,
     RemarkKind,
     WorkOrder,
@@ -231,3 +233,21 @@ def add_participant(work_order, actor, user) -> None:
     audit.record(
         actor, "workorder.participant_added", work_order, {"user": user.employee_id}
     )
+
+
+@transaction.atomic
+def confirm_complaint(complaint, actor, is_functional) -> Complaint:
+    if complaint.reporter_id != actor.id:
+        raise PermissionDenied("Only the reporter can confirm this complaint.")
+    if not complaint.is_awaiting_confirmation:
+        raise WorkOrderStateError("This complaint is not awaiting confirmation.")
+    complaint.functional_confirmation = (
+        FunctionalConfirmation.FUNCTIONAL
+        if is_functional
+        else FunctionalConfirmation.NOT_FUNCTIONAL
+    )
+    complaint.confirmed_at = timezone.now()
+    complaint.save(update_fields=["functional_confirmation", "confirmed_at"])
+    audit.record(actor, "complaint.confirmed", complaint,
+                 {"functional": is_functional})
+    return complaint
