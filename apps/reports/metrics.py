@@ -5,12 +5,13 @@ from collections import defaultdict
 
 from django.db.models import Count, Q
 
-from apps.accounts.models import Roles, User
 from apps.equipment.models import Equipment
 from apps.maintenance.models import (
     CloseReason,
     Complaint,
+    ComplaintStatus,
     FaultCategory,
+    FunctionalConfirmation,
     Remark,
     RemarkKind,
     WorkOrder,
@@ -119,45 +120,97 @@ def delayed_repairs(window_start, window_end):
     ]
 
 
-def per_engineer_activity(window_start, window_end):
-    users = (
-        User.objects.filter(role__in=[Roles.ENGINEER, Roles.ADMIN], is_active=True)
-        .annotate(
-            repairs=Count(
-                "workorders_participated",
-                filter=Q(
-                    workorders_participated__status=WorkOrderStatus.COMPLETED,
-                    workorders_participated__repair_completed_at__range=(
-                        window_start,
-                        window_end,
-                    ),
-                ),
-                distinct=True,
-            ),
-            # annotation must NOT be named "complaints_closed" — that name is
-            # taken by the reverse accessor of Complaint.closed_by and Django
-            # raises a conflict error for it
-            closed_count=Count(
-                "complaints_closed",
-                filter=Q(
-                    complaints_closed__closed_at__range=(window_start, window_end),
-                    complaints_closed__close_reason__in=[
-                        CloseReason.DUPLICATE,
-                        CloseReason.NO_FAULT,
-                    ],
-                ),
-                distinct=True,
-            ),
+def resolving_engineer_ids(complaint):
+    if complaint.work_order_id is not None:
+        ids = {u.id for u in complaint.work_order.participants.all()}
+        if ids:
+            return ids
+    return {complaint.closed_by_id} if complaint.closed_by_id else set()
+
+
+RESOLVED_REASONS = [CloseReason.RESOLVED, CloseReason.DUPLICATE, CloseReason.NO_FAULT]
+
+
+def _resolved_complaints(window_start, window_end):
+    return (
+        Complaint.objects.filter(
+            status=ComplaintStatus.CLOSED,
+            close_reason__in=RESOLVED_REASONS,
+            closed_at__range=(window_start, window_end),
         )
-        .order_by("-repairs")
+        .select_related("equipment", "work_order")
+        .prefetch_related("work_order__participants")
+    )
+
+
+def per_engineer_resolved(window_start, window_end):
+    from apps.accounts.models import User
+
+    counts = {}
+    for complaint in _resolved_complaints(window_start, window_end):
+        for uid in resolving_engineer_ids(complaint):
+            counts[uid] = counts.get(uid, 0) + 1
+    users = {u.id: u for u in User.objects.filter(id__in=counts)}
+    rows = [
+        {
+            "user_id": uid,
+            "name": users[uid].get_full_name() or users[uid].username,
+            "employee_id": users[uid].employee_id,
+            "resolved_count": n,
+        }
+        for uid, n in counts.items()
+        if uid in users
+    ]
+    return sorted(rows, key=lambda r: -r["resolved_count"])
+
+
+_RESOLUTION_LABEL = {
+    CloseReason.RESOLVED: "Repaired",
+    CloseReason.DUPLICATE: "Duplicate",
+    CloseReason.NO_FAULT: "No fault",
+}
+
+
+def resolved_complaints_for_engineer(user, window_start, window_end):
+    rows = []
+    for complaint in _resolved_complaints(window_start, window_end):
+        if user.id not in resolving_engineer_ids(complaint):
+            continue
+        if complaint.close_reason == CloseReason.RESOLVED and complaint.work_order_id:
+            remarks = [r.text for r in complaint.work_order.remarks.all()]
+        else:
+            remarks = [complaint.close_note] if complaint.close_note else []
+        eq = complaint.equipment
+        rows.append({
+            "complaint_id": complaint.id,
+            "equipment_id": eq.id,
+            "equipment_name": eq.name,
+            "equipment_model": eq.model_number,
+            "equipment_serial": eq.serial_number,
+            "resolution_type": _RESOLUTION_LABEL[complaint.close_reason],
+            "resolved_at": complaint.closed_at,
+            "remarks": remarks,
+        })
+    return sorted(rows, key=lambda r: r["resolved_at"], reverse=True)
+
+
+def recent_confirmations(window_start, window_end):
+    rows = (
+        Complaint.objects.filter(
+            functional_confirmation__isnull=False,
+            confirmed_at__range=(window_start, window_end),
+        )
+        .select_related("equipment")
+        .order_by("-confirmed_at")
     )
     return [
         {
-            "name": u.get_full_name() or u.username,
-            "employee_id": u.employee_id,
-            "repairs": u.repairs,
-            "complaints_closed": u.closed_count,
+            "complaint_id": c.id,
+            "equipment": str(c.equipment),
+            "work_order_id": c.work_order_id,
+            "is_functional": c.functional_confirmation
+            == FunctionalConfirmation.FUNCTIONAL,
+            "confirmed_at": c.confirmed_at,
         }
-        for u in users
-        if u.repairs or u.closed_count
+        for c in rows
     ]
