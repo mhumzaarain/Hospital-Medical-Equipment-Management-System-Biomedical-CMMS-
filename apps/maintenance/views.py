@@ -142,6 +142,7 @@ def workorder_open(request, equipment_pk):
 
 @login_required
 def workorder_detail(request, pk):
+    _require_engineer(request.user)
     wo = get_object_or_404(
         WorkOrder.objects.select_related(
             "equipment__department", "opened_by"

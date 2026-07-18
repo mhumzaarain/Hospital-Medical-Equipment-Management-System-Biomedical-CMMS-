@@ -61,8 +61,12 @@
   <h2 class="mb-2 font-semibold">Work Orders</h2>
   {% for wo in work_orders %}
   <div class="mb-3 border-b pb-3 text-sm">
+    {% if can_engineer %}
     <a class="font-medium text-sky-700 hover:underline"
        href="{% url 'workorder_detail' wo.pk %}">WO #{{ wo.pk }}</a>
+    {% else %}
+    <span class="font-medium">WO #{{ wo.pk }}</span>
+    {% endif %}
     — {{ wo.get_status_display }}{% if wo.outcome %} ({{ wo.get_outcome_display }}){% endif %}
     {% if wo.fault_category %} · {{ wo.get_fault_category_display }}{% endif %}
     · opened {{ wo.opened_at|date }}

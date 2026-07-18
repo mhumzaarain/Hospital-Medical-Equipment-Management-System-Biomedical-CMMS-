@@ -59,6 +59,13 @@
         #{{ c.pk }} — “{{ c.description|truncatechars:100 }}”
         <div class="text-slate-500">{{ c.reporter }} · {{ c.created_at }}
           · {{ c.get_status_display }}</div>
+        {% if c.is_awaiting_confirmation %}
+        <div class="text-amber-700">Awaiting staff confirmation</div>
+        {% elif c.functional_confirmation == 'functional' %}
+        <div class="text-emerald-700">Staff confirmed: Functional ✓</div>
+        {% elif c.functional_confirmation == 'not_functional' %}
+        <div class="font-medium text-red-700">Staff reported: NOT functional ✗</div>
+        {% endif %}
       </li>
       {% empty %}<li class="text-slate-500">Engineer-initiated (no complaints).</li>
       {% endfor %}

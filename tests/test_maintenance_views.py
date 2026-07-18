@@ -174,3 +174,26 @@ def test_other_staff_cannot_confirm(client, staff_user, engineer, equipment):
     client.force_login(other)
     assert client.post(reverse("complaint_confirm", args=[complaint.pk]),
                        {"functional": "yes"}).status_code == 403
+
+
+def test_workorder_detail_forbidden_for_staff(client, staff_user, engineer, equipment):
+    from apps.maintenance.services import open_work_order
+    wo = open_work_order(equipment, engineer)
+    client.force_login(staff_user)
+    assert client.get(reverse("workorder_detail", args=[wo.pk])).status_code == 403
+
+
+def test_workorder_detail_shows_confirmation(client, engineer, staff_user, equipment):
+    from apps.maintenance.services import (
+        complete_work_order, confirm_complaint, lodge_complaint, open_work_order,
+        start_repair,
+    )
+    from apps.maintenance.models import FaultCategory
+    complaint = lodge_complaint(staff_user, equipment, "no power")
+    wo = start_repair(open_work_order(equipment, engineer), engineer)
+    complete_work_order(wo, engineer, fault_category=FaultCategory.ELECTRICAL)
+    complaint.refresh_from_db()
+    confirm_complaint(complaint, staff_user, is_functional=False)
+    client.force_login(engineer)
+    response = client.get(reverse("workorder_detail", args=[wo.pk]))
+    assert b"NOT functional" in response.content
