@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Welcome — {{ HOSPITAL_NAME }}{% endblock %}
+{% block content %}
+<div class="mx-auto mt-6 max-w-2xl rounded-lg bg-white p-10 text-center shadow">
+  <img src="{% static 'img/favicon.png' %}" alt="HEMDESK"
+       class="mx-auto mb-4 h-20 w-20 rounded">
+  <h1 class="text-2xl font-bold">Welcome to Hospital Equipment Management Desk</h1>
+  <p class="mx-auto mt-3 text-slate-600">
+    A platform to manage your hospital's medical equipment — register devices,
+    track malfunction complaints and repairs, and see it all on one dashboard.
+    Use the menu on the left to get started.
+  </p>
+  <p class="mt-4 text-sm text-slate-500">
+    Signed in as {{ user.get_full_name|default:user.username }}
+    ({{ user.employee_id }}) · {{ HOSPITAL_NAME }}
+  </p>
+</div>
+{% endblock %}
