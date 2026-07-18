@@ -1,7 +1,10 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Log in{% endblock %}
 {% block content %}
 <div class="mx-auto max-w-sm mt-16 rounded-lg bg-white p-8 shadow">
+  <img src="{% static 'img/logo.png' %}" alt="{{ HOSPITAL_NAME }}"
+       class="mx-auto mb-6 h-16 w-auto">
   <h1 class="mb-6 text-xl font-bold">Log in</h1>
   {% if form.errors %}
     <p class="mb-4 text-sm text-red-700">Invalid username or password.</p>

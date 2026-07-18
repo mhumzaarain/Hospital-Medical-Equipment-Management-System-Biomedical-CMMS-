@@ -33,6 +33,7 @@ def test_home_requires_login(client):
     assert "/accounts/login/" in response.url
 
 
-def test_login_page_uses_base_template(client):
+def test_login_page_shows_logo(client):
+    # the logo renders via the base-template nav and the login card
     response = client.get("/accounts/login/")
-    assert b"CMMS" in response.content
+    assert b"img/logo.png" in response.content
