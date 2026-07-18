@@ -8,6 +8,9 @@ import io
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
+from django.core.exceptions import PermissionDenied
+from django.db import transaction
+
 from .models import Department, Equipment
 
 
@@ -125,3 +128,39 @@ def validate_rows(rows, create_missing_departments=False) -> list[RowResult]:
                 result.extra[key] = value
         results.append(result)
     return results
+
+
+@dataclass
+class ImportSummary:
+    created: int
+    skipped: list
+
+
+@transaction.atomic
+def import_rows(
+    actor, results, create_missing_departments=False
+) -> ImportSummary:
+    from . import services
+
+    if not actor.is_engineer_or_admin:
+        raise PermissionDenied("Only engineers or admins may import equipment.")
+    created = 0
+    skipped = []
+    for result in results:
+        if not result.ok:
+            skipped.append(result)
+            continue
+        if create_missing_departments:
+            department, _ = Department.objects.get_or_create(
+                name=result.department_name
+            )
+        else:
+            department = Department.objects.get(name=result.department_name)
+        services.create_equipment(
+            actor,
+            department=department,
+            extra=result.extra,
+            **result.data,
+        )
+        created += 1
+    return ImportSummary(created=created, skipped=skipped)

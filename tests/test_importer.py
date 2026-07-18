@@ -1,9 +1,17 @@
 import io
 
 import pytest
+from django.core.exceptions import PermissionDenied
 from openpyxl import Workbook
 
-from apps.equipment.importer import ImportFormatError, parse_upload, validate_rows
+from apps.core.models import AuditLog
+from apps.equipment.importer import (
+    ImportFormatError,
+    import_rows,
+    parse_upload,
+    validate_rows,
+)
+from apps.equipment.models import Equipment
 
 
 def _csv(text: str) -> io.BytesIO:
@@ -104,3 +112,38 @@ def test_validate_good_optionals_and_extra(department):
     assert str(r.data["purchase_date"]) == "2020-12-31"
     assert r.data["is_critical_asset"] is True
     assert r.extra == {"ward_notes": "3rd floor"}
+
+
+def test_import_creates_valid_rows_and_skips_errors(engineer, department):
+    results = validate_rows([_row(), _row(serial_number="")])
+    summary = import_rows(engineer, results)
+    assert summary.created == 1
+    assert len(summary.skipped) == 1
+    assert Equipment.objects.filter(serial_number="SN-10").exists()
+
+
+def test_import_writes_audit_log(engineer, department):
+    import_rows(engineer, validate_rows([_row()]))
+    assert AuditLog.objects.filter(verb="equipment.created").count() == 1
+
+
+def test_import_creates_missing_departments_when_flagged(engineer, db):
+    results = validate_rows([_row(department="Ghost")], create_missing_departments=True)
+    summary = import_rows(engineer, results, create_missing_departments=True)
+    assert summary.created == 1
+    from apps.equipment.models import Department
+
+    assert Department.objects.filter(name="Ghost").exists()
+
+
+def test_import_extra_columns_land_in_jsonb(engineer, department):
+    results = validate_rows([_row(ward_notes="3rd floor")])
+    import_rows(engineer, results)
+    assert Equipment.objects.get(serial_number="SN-10").extra == {
+        "ward_notes": "3rd floor"
+    }
+
+
+def test_import_rejects_staff(staff_user, department):
+    with pytest.raises(PermissionDenied):
+        import_rows(staff_user, validate_rows([_row()]))
