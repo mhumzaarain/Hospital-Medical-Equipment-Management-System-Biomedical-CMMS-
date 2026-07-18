@@ -1,44 +1,70 @@
 {% extends "base.html" %}
 {% block title %}Equipment Registry{% endblock %}
+{% block page_title %}Equipment Registry{% endblock %}
 {% block content %}
-<div class="mb-4 flex items-center justify-between">
-  <h1 class="text-2xl font-bold">Equipment Registry</h1>
+<div class="mb-5 flex items-center justify-between">
+  <div>
+    <h1 class="text-2xl font-bold">Equipment Registry</h1>
+    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Search updates as you type.</p>
+  </div>
   {% if user.is_engineer_or_admin %}
-    <a href="{% url 'equipment_create' %}"
-       class="rounded bg-sky-800 px-4 py-2 text-white hover:bg-sky-700">
-      + Add Equipment</a>
+    <a href="{% url 'equipment_create' %}" class="btn-primary">+ Add Equipment</a>
   {% endif %}
 </div>
-<form method="get" class="mb-4 flex gap-2">
-  <input name="q" value="{{ request.GET.q }}" placeholder="Search serial, name, model…"
-         class="w-72 rounded border border-slate-300 px-3 py-2">
-  <select name="status" class="rounded border border-slate-300 px-2">
-    <option value="">All statuses</option>
-    <option value="working">Working</option>
-    <option value="in_repair">In Repair</option>
-    <option value="condemned">Condemned</option>
-  </select>
-  <button class="rounded bg-slate-700 px-4 py-2 text-white">Filter</button>
-</form>
-<table class="w-full rounded bg-white shadow text-sm">
-  <thead><tr class="border-b text-left">
-    <th class="p-3">Name</th><th class="p-3">Model</th><th class="p-3">Serial #</th>
-    <th class="p-3">Department</th><th class="p-3">Status</th><th class="p-3">Critical</th>
-  </tr></thead>
-  <tbody>
-    {% for eq in object_list %}
-    <tr class="border-b hover:bg-slate-50">
-      <td class="p-3"><a class="text-sky-700 hover:underline"
-          href="{% url 'equipment_detail' eq.pk %}">{{ eq.name }}</a></td>
-      <td class="p-3">{{ eq.model_number }}</td>
-      <td class="p-3 font-mono">{{ eq.serial_number }}</td>
-      <td class="p-3">{{ eq.department }}</td>
-      <td class="p-3">{{ eq.get_status_display }}</td>
-      <td class="p-3">{% if eq.is_critical_asset %}★{% endif %}</td>
-    </tr>
-    {% empty %}
-    <tr><td class="p-6 text-center text-slate-500" colspan="6">No equipment found.</td></tr>
+<form id="eq-filter" method="get" class="mb-4 flex flex-wrap items-center gap-2" onsubmit="return false">
+  <div class="relative w-80 max-w-full">
+    <svg class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="search" name="q" value="{{ request.GET.q }}" placeholder="Search serial, name, model…"
+           class="field pl-9" autocomplete="off"
+           hx-get="{% url 'equipment_list' %}" hx-trigger="input changed delay:300ms, search"
+           hx-target="#eq-rows" hx-include="#eq-filter" hx-indicator="#eq-skeleton">
+  </div>
+  <div class="flex gap-1.5" role="radiogroup" aria-label="Status filter">
+    {% for value, label in status_choices %}
+    <label class="cursor-pointer">
+      <input type="radio" name="status" value="{{ value }}" class="peer sr-only"
+             {% if request.GET.status == value or not request.GET.status and not value %}checked{% endif %}
+             hx-get="{% url 'equipment_list' %}" hx-trigger="change"
+             hx-target="#eq-rows" hx-include="#eq-filter" hx-indicator="#eq-skeleton">
+      <span class="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition peer-checked:border-sky-600 peer-checked:bg-sky-600 peer-checked:text-white dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">{{ label }}</span>
+    </label>
     {% endfor %}
-  </tbody>
-</table>
+  </div>
+</form>
+<div class="table-card">
+  <table class="table">
+    <thead><tr>
+      <th>Name</th><th>Model</th><th>Serial #</th>
+      <th>Department</th><th>Status</th><th>Critical</th>
+    </tr></thead>
+    <tbody id="eq-skeleton" class="htmx-indicator">
+      {% for _ in "123" %}
+      <tr>
+        <td><span class="skeleton block h-4 w-28"></span></td>
+        <td><span class="skeleton block h-4 w-16"></span></td>
+        <td><span class="skeleton block h-4 w-20"></span></td>
+        <td><span class="skeleton block h-4 w-24"></span></td>
+        <td><span class="skeleton block h-4 w-16"></span></td>
+        <td><span class="skeleton block h-4 w-6"></span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tbody id="eq-rows">
+      {% include "equipment/_list_rows.html" %}
+    </tbody>
+  </table>
+</div>
+{% if is_paginated %}
+<div class="mt-4 flex items-center justify-between text-sm">
+  <span class="text-slate-500 dark:text-slate-400">Page {{ page_obj.number }} of {{ paginator.num_pages }}</span>
+  <div class="flex gap-2">
+    {% if page_obj.has_previous %}
+      <a class="btn-ghost btn-sm" href="?q={{ request.GET.q|urlencode }}&status={{ request.GET.status|urlencode }}&page={{ page_obj.previous_page_number }}">← Prev</a>
+    {% endif %}
+    {% if page_obj.has_next %}
+      <a class="btn-ghost btn-sm" href="?q={{ request.GET.q|urlencode }}&status={{ request.GET.status|urlencode }}&page={{ page_obj.next_page_number }}">Next →</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
 {% endblock %}
