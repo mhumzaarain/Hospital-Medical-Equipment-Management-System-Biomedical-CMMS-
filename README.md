@@ -21,7 +21,28 @@ uv run python manage.py seed_demo   # optional: 90 days of demo data
 uv run python manage.py runserver
 ```
 
-Demo logins (after `seed_demo`): `admin` / `engineer1` / `staff1`, password `demo1234`.
+## Demo accounts & login
+
+`seed_demo` creates ready-to-use accounts so you can log in and explore the UI
+immediately — no manual account setup:
+
+| Username | Role | Sees |
+| --- | --- | --- |
+| `admin` | Admin | Everything, plus the Django admin at `/admin/` |
+| `engineer1`, `engineer2`, `engineer3` | Engineer | Queue, work orders, dashboard, equipment |
+| `staff1` … `staff10` | Staff | Lodge and view their own complaints |
+
+**All demo accounts share one password**, set by the `DEMO_PASSWORD` variable in
+your `.env` (see `.env.example`). It defaults to **`demo1234`**. To use a
+different demo password, set `DEMO_PASSWORD` in `.env` *before* running
+`seed_demo` — the value in `.env` becomes the login password for every seeded
+account. (The usernames above are fixed in the seeder.)
+
+> `DEMO_PASSWORD` only affects the demo fixture accounts. It is a shared,
+> well-known demo password on fake data — change it before any real deployment,
+> and create real per-person accounts via the Django admin.
+
+Start with `engineer1` for the fullest view.
 
 ## Tests
 

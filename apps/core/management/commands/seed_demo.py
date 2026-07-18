@@ -1,3 +1,4 @@
+import os
 import random
 import sys
 from datetime import timedelta
@@ -63,6 +64,9 @@ class Command(BaseCommand):
         random.seed(42)
         User = get_user_model()
         now = timezone.now()
+        # Shared login password for all seeded demo accounts. Configurable via
+        # the DEMO_PASSWORD env var (set in .env); defaults to "demo1234".
+        demo_password = os.environ.get("DEMO_PASSWORD", "demo1234")
 
         departments = [
             Department.objects.create(name=n, location=loc)
@@ -76,7 +80,7 @@ class Command(BaseCommand):
         ]
         admin = User.objects.create_user(
             username="admin",
-            password="demo1234",
+            password=demo_password,
             employee_id="EMP-900",
             role=Roles.ADMIN,
             first_name="Ayesha",
@@ -87,7 +91,7 @@ class Command(BaseCommand):
         engineers = [
             User.objects.create_user(
                 username=f"engineer{i}",
-                password="demo1234",
+                password=demo_password,
                 employee_id=f"EMP-10{i}",
                 role=Roles.ENGINEER,
                 first_name=f"Engineer{i}",
@@ -98,7 +102,7 @@ class Command(BaseCommand):
         staff = [
             User.objects.create_user(
                 username=f"staff{i}",
-                password="demo1234",
+                password=demo_password,
                 employee_id=f"EMP-00{i}",
                 role=Roles.STAFF,
                 first_name=f"Staff{i}",
@@ -197,6 +201,6 @@ class Command(BaseCommand):
                 f"Seeded {Equipment.objects.count()} devices, "
                 f"{Complaint.objects.count()} complaints, "
                 f"{WorkOrder.objects.count()} work orders. "
-                "Logins: admin/demo1234, engineer1/demo1234, staff1/demo1234"
+                f"Logins: admin, engineer1, staff1 — password: {demo_password}"
             )
         )
