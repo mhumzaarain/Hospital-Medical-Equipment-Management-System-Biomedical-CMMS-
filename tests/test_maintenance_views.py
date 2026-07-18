@@ -129,3 +129,48 @@ def test_home_redirects_by_role(client, staff_user, engineer):
     assert client.get(reverse("home")).url == reverse("my_complaints")
     client.force_login(engineer)
     assert client.get(reverse("home")).url == reverse("complaint_queue")
+
+
+def test_staff_confirms_via_view(client, staff_user, engineer, equipment):
+    from apps.maintenance.services import (
+        complete_work_order, lodge_complaint, open_work_order, start_repair,
+    )
+    from apps.maintenance.models import FaultCategory, FunctionalConfirmation
+    complaint = lodge_complaint(staff_user, equipment, "no power")
+    wo = start_repair(open_work_order(equipment, engineer), engineer)
+    complete_work_order(wo, engineer, fault_category=FaultCategory.ELECTRICAL)
+    client.force_login(staff_user)
+    response = client.post(reverse("complaint_confirm", args=[complaint.pk]),
+                           {"functional": "yes"})
+    assert response.status_code == 302
+    complaint.refresh_from_db()
+    assert complaint.functional_confirmation == FunctionalConfirmation.FUNCTIONAL
+
+
+def test_my_complaints_shows_confirm_prompt(client, staff_user, engineer, equipment):
+    from apps.maintenance.services import (
+        complete_work_order, lodge_complaint, open_work_order, start_repair,
+    )
+    from apps.maintenance.models import FaultCategory
+    lodge_complaint(staff_user, equipment, "no power")
+    wo = start_repair(open_work_order(equipment, engineer), engineer)
+    complete_work_order(wo, engineer, fault_category=FaultCategory.ELECTRICAL)
+    client.force_login(staff_user)
+    response = client.get(reverse("my_complaints"))
+    assert b"functional now" in response.content
+
+
+def test_other_staff_cannot_confirm(client, staff_user, engineer, equipment):
+    from apps.maintenance.services import (
+        complete_work_order, lodge_complaint, open_work_order, start_repair,
+    )
+    from apps.maintenance.models import FaultCategory
+    from django.contrib.auth import get_user_model
+    complaint = lodge_complaint(staff_user, equipment, "no power")
+    wo = start_repair(open_work_order(equipment, engineer), engineer)
+    complete_work_order(wo, engineer, fault_category=FaultCategory.ELECTRICAL)
+    other = get_user_model().objects.create_user(
+        username="nurse2", password="pw", employee_id="EMP-002", role="staff")
+    client.force_login(other)
+    assert client.post(reverse("complaint_confirm", args=[complaint.pk]),
+                       {"functional": "yes"}).status_code == 403

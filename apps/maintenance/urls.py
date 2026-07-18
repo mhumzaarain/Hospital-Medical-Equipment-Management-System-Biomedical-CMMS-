@@ -9,6 +9,11 @@ urlpatterns = [
     path("queue/rows/", views.complaint_queue_rows, name="complaint_queue_rows"),
     path("complaints/<int:pk>/close/", views.complaint_close, name="complaint_close"),
     path(
+        "complaints/<int:pk>/confirm/",
+        views.complaint_confirm,
+        name="complaint_confirm",
+    ),
+    path(
         "workorders/open/<int:equipment_pk>/",
         views.workorder_open,
         name="workorder_open",

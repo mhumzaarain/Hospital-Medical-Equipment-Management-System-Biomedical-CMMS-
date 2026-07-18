@@ -48,7 +48,28 @@ def my_complaints(request):
     complaints = Complaint.objects.filter(reporter=request.user).select_related(
         "equipment", "work_order"
     )
-    return render(request, "maintenance/my_complaints.html", {"complaints": complaints})
+    pending = sum(1 for c in complaints if c.is_awaiting_confirmation)
+    return render(
+        request,
+        "maintenance/my_complaints.html",
+        {"complaints": complaints, "pending_confirmations": pending},
+    )
+
+
+@login_required
+@require_POST
+def complaint_confirm(request, pk):
+    complaint = get_object_or_404(Complaint, pk=pk)
+    is_functional = request.POST.get("functional") == "yes"
+    try:
+        services.confirm_complaint(complaint, request.user, is_functional)
+    except (DomainError, PermissionDenied) as exc:
+        if isinstance(exc, PermissionDenied):
+            raise
+        messages.error(request, str(exc))
+    else:
+        messages.success(request, "Thank you — your response was recorded.")
+    return redirect("my_complaints")
 
 
 def _open_complaints_queryset():
