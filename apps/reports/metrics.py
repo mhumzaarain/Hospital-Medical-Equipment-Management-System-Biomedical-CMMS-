@@ -139,7 +139,7 @@ def _resolved_complaints(window_start, window_end):
             closed_at__range=(window_start, window_end),
         )
         .select_related("equipment", "work_order")
-        .prefetch_related("work_order__participants")
+        .prefetch_related("work_order__participants", "work_order__remarks")
     )
 
 
