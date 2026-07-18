@@ -1,17 +1,57 @@
 {% extends "base.html" %}
 {% block title %}Complaint Queue{% endblock %}
+{% block page_title %}Complaint Queue{% endblock %}
 {% block content %}
-<h1 class="mb-4 text-2xl font-bold">Complaint Queue</h1>
-<p class="mb-2 text-sm text-slate-500">Auto-refreshes every 10 seconds.</p>
-<table class="w-full rounded bg-white shadow text-sm">
-  <thead><tr class="border-b text-left">
-    <th class="p-3">#</th><th class="p-3">Equipment</th><th class="p-3">Department</th>
-    <th class="p-3">Description</th><th class="p-3">Reporter</th>
-    <th class="p-3">Received</th><th class="p-3">State</th><th class="p-3"></th>
-  </tr></thead>
-  <tbody hx-get="{% url 'complaint_queue_rows' %}" hx-trigger="every 10s"
-         hx-swap="innerHTML">
-    {% include "maintenance/_queue_rows.html" %}
-  </tbody>
-</table>
+<div class="mb-5">
+  <h1 class="text-2xl font-bold">Complaint Queue</h1>
+  <p class="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+    <span class="relative flex size-2">
+      <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+      <span class="relative inline-flex size-2 rounded-full bg-emerald-500"></span>
+    </span>
+    Live — refreshes every 10 seconds.
+  </p>
+</div>
+<form id="queue-filter" method="get" class="mb-4 flex flex-wrap items-center gap-2" onsubmit="return false">
+  <div class="relative w-80 max-w-full">
+    <svg class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="search" name="q" placeholder="Search equipment, serial, reporter…"
+           class="field pl-9" autocomplete="off"
+           hx-get="{% url 'complaint_queue_rows' %}" hx-trigger="input changed delay:300ms, search"
+           hx-target="#queue-rows" hx-include="#queue-filter">
+  </div>
+  <div class="flex gap-1.5" role="radiogroup" aria-label="State filter">
+    <label class="cursor-pointer">
+      <input type="radio" name="state" value="" class="peer sr-only" checked
+             hx-get="{% url 'complaint_queue_rows' %}" hx-trigger="change"
+             hx-target="#queue-rows" hx-include="#queue-filter">
+      <span class="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition peer-checked:border-sky-600 peer-checked:bg-sky-600 peer-checked:text-white dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">All</span>
+    </label>
+    <label class="cursor-pointer">
+      <input type="radio" name="state" value="unassigned" class="peer sr-only"
+             hx-get="{% url 'complaint_queue_rows' %}" hx-trigger="change"
+             hx-target="#queue-rows" hx-include="#queue-filter">
+      <span class="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition peer-checked:border-sky-600 peer-checked:bg-sky-600 peer-checked:text-white dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">Unassigned</span>
+    </label>
+    <label class="cursor-pointer">
+      <input type="radio" name="state" value="assigned" class="peer sr-only"
+             hx-get="{% url 'complaint_queue_rows' %}" hx-trigger="change"
+             hx-target="#queue-rows" hx-include="#queue-filter">
+      <span class="inline-flex rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-600 transition peer-checked:border-sky-600 peer-checked:bg-sky-600 peer-checked:text-white dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">Has WO</span>
+    </label>
+  </div>
+</form>
+<div class="table-card">
+  <table class="table">
+    <thead><tr>
+      <th>#</th><th>Equipment</th><th>Department</th><th>Description</th>
+      <th>Reporter</th><th>Received</th><th>State</th><th></th>
+    </tr></thead>
+    <tbody id="queue-rows"
+           hx-get="{% url 'complaint_queue_rows' %}" hx-trigger="every 10s"
+           hx-include="#queue-filter" hx-swap="innerHTML">
+      {% include "maintenance/_queue_rows.html" %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

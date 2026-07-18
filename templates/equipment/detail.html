@@ -1,76 +1,76 @@
 {% extends "base.html" %}
 {% block title %}{{ equipment.name }}{% endblock %}
+{% block page_title %}Equipment{% endblock %}
 {% block content %}
-<div class="mb-4 flex items-start justify-between">
+<div class="mb-5 flex flex-wrap items-start justify-between gap-3">
   <div>
-    <h1 class="text-2xl font-bold">{{ equipment.name }} {{ equipment.model_number }}</h1>
-    <p class="font-mono text-slate-600">{{ equipment.serial_number }}</p>
+    <h1 class="text-2xl font-bold">{{ equipment.name }} <span class="font-normal text-slate-400">{{ equipment.model_number }}</span></h1>
+    <p class="mt-0.5 font-mono text-sm text-slate-500 dark:text-slate-400">{{ equipment.serial_number }}</p>
   </div>
-  <span class="rounded px-3 py-1 text-sm
-    {% if equipment.status == 'working' %}bg-emerald-100 text-emerald-800
-    {% elif equipment.status == 'in_repair' %}bg-amber-100 text-amber-800
-    {% else %}bg-red-100 text-red-800{% endif %}">
-    {{ equipment.get_status_display }}</span>
+  {% if equipment.status == 'working' %}<span class="badge-working px-3 py-1 text-sm"><span class="size-2 rounded-full bg-current"></span>{{ equipment.get_status_display }}</span>
+  {% elif equipment.status == 'in_repair' %}<span class="badge-repair px-3 py-1 text-sm"><span class="size-2 rounded-full bg-current"></span>{{ equipment.get_status_display }}</span>
+  {% else %}<span class="badge-danger px-3 py-1 text-sm"><span class="size-2 rounded-full bg-current"></span>{{ equipment.get_status_display }}</span>{% endif %}
 </div>
 <div class="grid gap-6 md:grid-cols-2">
-  <div class="rounded bg-white p-4 shadow">
-    <h2 class="mb-2 font-semibold">Details</h2>
-    <dl class="text-sm space-y-1">
-      <div><dt class="inline text-slate-500">Manufacturer:</dt> <dd class="inline">{{ equipment.manufacturer }}</dd></div>
-      <div><dt class="inline text-slate-500">Vendor:</dt> <dd class="inline">{{ equipment.vendor|default:"—" }}</dd></div>
-      <div><dt class="inline text-slate-500">Department:</dt> <dd class="inline">{{ equipment.department }}</dd></div>
-      <div><dt class="inline text-slate-500">Critical asset:</dt> <dd class="inline">{{ equipment.is_critical_asset|yesno }}</dd></div>
-      <div><dt class="inline text-slate-500">Purchased:</dt> <dd class="inline">{{ equipment.purchase_date|default:"—" }}</dd></div>
-      <div><dt class="inline text-slate-500">Installed:</dt> <dd class="inline">{{ equipment.installation_date|default:"—" }}</dd></div>
-      <div><dt class="inline text-slate-500">Repairs completed:</dt>
-        <dd class="inline">{{ completed_repair_count }}</dd></div>
+  <div class="card p-5">
+    <h2 class="mb-3 font-semibold">Details</h2>
+    <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+      <dt class="text-slate-500 dark:text-slate-400">Manufacturer</dt><dd>{{ equipment.manufacturer }}</dd>
+      <dt class="text-slate-500 dark:text-slate-400">Vendor</dt><dd>{{ equipment.vendor|default:"—" }}</dd>
+      <dt class="text-slate-500 dark:text-slate-400">Department</dt><dd>{{ equipment.department }}</dd>
+      <dt class="text-slate-500 dark:text-slate-400">Critical asset</dt>
+      <dd>{% if equipment.is_critical_asset %}<span class="text-amber-500">★</span> Yes{% else %}No{% endif %}</dd>
+      <dt class="text-slate-500 dark:text-slate-400">Purchased</dt><dd>{{ equipment.purchase_date|default:"—" }}</dd>
+      <dt class="text-slate-500 dark:text-slate-400">Installed</dt><dd>{{ equipment.installation_date|default:"—" }}</dd>
+      <dt class="text-slate-500 dark:text-slate-400">Repairs completed</dt><dd>{{ completed_repair_count }}</dd>
       {% if equipment.status == 'condemned' %}
-      <div><dt class="inline text-slate-500">Condemned:</dt>
-        <dd class="inline">{{ equipment.condemned_at }} — {{ equipment.condemned_location }}</dd></div>
+      <dt class="text-slate-500 dark:text-slate-400">Condemned</dt>
+      <dd>{{ equipment.condemned_at }} — {{ equipment.condemned_location }}</dd>
       {% endif %}
     </dl>
     {% if can_engineer and equipment.status != 'condemned' %}
-    <div class="mt-4 flex gap-2">
-      <a href="{% url 'equipment_edit' equipment.pk %}"
-         class="rounded bg-slate-700 px-3 py-1.5 text-sm text-white">Edit</a>
-      <a href="{% url 'equipment_condemn' equipment.pk %}"
-         class="rounded bg-red-700 px-3 py-1.5 text-sm text-white">Condemn…</a>
+    <div class="mt-5 flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+      <a href="{% url 'equipment_edit' equipment.pk %}" class="btn-ghost btn-sm">Edit</a>
       <form method="post" action="{% url 'workorder_open' equipment.pk %}">
         {% csrf_token %}
-        <button class="rounded bg-amber-600 px-3 py-1.5 text-sm text-white">
-          Open Work Order</button>
+        <button class="btn-warn btn-sm">Open Work Order</button>
       </form>
+      <a href="{% url 'equipment_condemn' equipment.pk %}" class="btn-danger btn-sm">Condemn…</a>
     </div>
     {% endif %}
   </div>
-  <div class="rounded bg-white p-4 shadow">
-    <h2 class="mb-2 font-semibold">Status History</h2>
-    <ul class="space-y-2 text-sm">
+  <div class="card p-5">
+    <h2 class="mb-3 font-semibold">Status History</h2>
+    <ol class="relative space-y-4 border-l border-slate-200 pl-5 dark:border-slate-700">
       {% for event in status_events %}
-      <li class="border-l-2 border-sky-300 pl-3">
-        <span class="text-slate-500">{{ event.created_at }}</span> —
-        {{ event.get_old_status_display }} → {{ event.get_new_status_display }}
-        by {{ event.actor }}
-        {% if event.remark %}<div class="text-slate-600">“{{ event.remark }}”</div>{% endif %}
+      <li class="relative">
+        <span class="absolute -left-[26px] top-1 size-3 rounded-full border-2 border-white bg-sky-500 dark:border-slate-900"></span>
+        <p class="text-xs text-slate-500 dark:text-slate-400">{{ event.created_at }}</p>
+        <p class="text-sm">{{ event.get_old_status_display }} → <span class="font-medium">{{ event.get_new_status_display }}</span>
+          <span class="text-slate-500 dark:text-slate-400">by {{ event.actor }}</span></p>
+        {% if event.remark %}<p class="mt-0.5 text-sm text-slate-600 dark:text-slate-300">“{{ event.remark }}”</p>{% endif %}
       </li>
-      {% empty %}<li class="text-slate-500">No status changes yet.</li>{% endfor %}
-    </ul>
+      {% empty %}<li class="text-sm text-slate-500 dark:text-slate-400">No status changes yet.</li>{% endfor %}
+    </ol>
   </div>
 </div>
-<div class="mt-6 rounded bg-white p-4 shadow">
-  <h2 class="mb-2 font-semibold">Work Orders</h2>
-  {% for wo in work_orders %}
-  <div class="mb-3 border-b pb-3 text-sm">
-    {% if can_engineer %}
-    <a class="font-medium text-sky-700 hover:underline"
-       href="{% url 'workorder_detail' wo.pk %}">WO #{{ wo.pk }}</a>
-    {% else %}
-    <span class="font-medium">WO #{{ wo.pk }}</span>
-    {% endif %}
-    — {{ wo.get_status_display }}{% if wo.outcome %} ({{ wo.get_outcome_display }}){% endif %}
-    {% if wo.fault_category %} · {{ wo.get_fault_category_display }}{% endif %}
-    · opened {{ wo.opened_at|date }}
+<div class="card mt-6 p-5">
+  <h2 class="mb-3 font-semibold">Work Orders</h2>
+  <div class="space-y-3">
+    {% for wo in work_orders %}
+    <div class="flex flex-wrap items-center gap-2 rounded-lg border border-slate-100 px-4 py-3 text-sm dark:border-slate-800">
+      {% if can_engineer %}
+        <a class="link" href="{% url 'workorder_detail' wo.pk %}">WO #{{ wo.pk }}</a>
+      {% else %}<span class="font-medium">WO #{{ wo.pk }}</span>{% endif %}
+      {% if wo.status == 'completed' %}<span class="badge-working">{{ wo.get_status_display }}</span>
+      {% elif wo.status == 'cancelled' %}<span class="badge-muted">{{ wo.get_status_display }}</span>
+      {% elif wo.status == 'in_progress' %}<span class="badge-repair">{{ wo.get_status_display }}</span>
+      {% else %}<span class="badge-info">{{ wo.get_status_display }}</span>{% endif %}
+      {% if wo.outcome %}<span class="text-slate-500 dark:text-slate-400">{{ wo.get_outcome_display }}</span>{% endif %}
+      {% if wo.fault_category %}<span class="badge-muted">{{ wo.get_fault_category_display }}</span>{% endif %}
+      <span class="ml-auto text-slate-500 dark:text-slate-400">opened {{ wo.opened_at|date }}</span>
+    </div>
+    {% empty %}<p class="text-sm text-slate-500 dark:text-slate-400">No repairs recorded.</p>{% endfor %}
   </div>
-  {% empty %}<p class="text-sm text-slate-500">No repairs recorded.</p>{% endfor %}
 </div>
 {% endblock %}

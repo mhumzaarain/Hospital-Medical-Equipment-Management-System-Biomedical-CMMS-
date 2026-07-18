@@ -128,7 +128,8 @@ def test_home_shows_landing_page(client, staff_user):
     client.force_login(staff_user)
     response = client.get(reverse("home"))
     assert response.status_code == 200
-    assert b"Welcome to Hospital Equipment Management Desk" in response.content
+    assert b"Report a fault" in response.content
+    assert b"Browse equipment" in response.content
 
 
 def test_staff_confirms_via_view(client, staff_user, engineer, equipment):

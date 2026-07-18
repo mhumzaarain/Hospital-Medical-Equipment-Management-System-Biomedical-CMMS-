@@ -20,6 +20,16 @@ class EquipmentListView(LoginRequiredMixin, ListView):
     template_name = "equipment/list.html"
     paginate_by = 25
 
+    def get_template_names(self):
+        if self.request.headers.get("HX-Request"):
+            return ["equipment/_list_rows.html"]
+        return [self.template_name]
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["status_choices"] = [("", "All")] + list(EquipmentStatus.choices)
+        return ctx
+
     def get_queryset(self):
         qs = super().get_queryset().select_related("department")
         q = self.request.GET.get("q", "").strip()

@@ -1,0 +1,16 @@
+{% for eq in object_list %}
+<tr class="row-hover cursor-pointer" onclick="window.location='{% url 'equipment_detail' eq.pk %}'">
+  <td><a class="link" href="{% url 'equipment_detail' eq.pk %}">{{ eq.name }}</a></td>
+  <td>{{ eq.model_number }}</td>
+  <td class="font-mono text-xs">{{ eq.serial_number }}</td>
+  <td>{{ eq.department }}</td>
+  <td>
+    {% if eq.status == 'working' %}<span class="badge-working"><span class="size-1.5 rounded-full bg-current"></span>Working</span>
+    {% elif eq.status == 'in_repair' %}<span class="badge-repair"><span class="size-1.5 rounded-full bg-current"></span>In Repair</span>
+    {% else %}<span class="badge-danger"><span class="size-1.5 rounded-full bg-current"></span>Condemned</span>{% endif %}
+  </td>
+  <td>{% if eq.is_critical_asset %}<span class="text-amber-500" title="Critical asset">★</span>{% endif %}</td>
+</tr>
+{% empty %}
+<tr><td colspan="6" class="p-6 text-center text-slate-500 dark:text-slate-400">No equipment found.</td></tr>
+{% endfor %}

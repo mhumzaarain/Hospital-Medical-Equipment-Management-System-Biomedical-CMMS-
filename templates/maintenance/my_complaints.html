@@ -1,49 +1,52 @@
 {% extends "base.html" %}
 {% block title %}My Complaints{% endblock %}
+{% block page_title %}My Complaints{% endblock %}
 {% block content %}
 <h1 class="mb-4 text-2xl font-bold">My Complaints</h1>
 {% if pending_confirmations %}
-<div class="mb-4 rounded border border-amber-300 bg-amber-50 px-4 py-2 text-amber-800">
-  You have {{ pending_confirmations }} repaired complaint{{ pending_confirmations|pluralize }}
-  to confirm below.
+<div class="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+  <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+  You have {{ pending_confirmations }} repaired complaint{{ pending_confirmations|pluralize }} to confirm below.
 </div>
 {% endif %}
-<table class="w-full rounded bg-white shadow text-sm">
-  <thead><tr class="border-b text-left">
-    <th class="p-3">#</th><th class="p-3">Equipment</th><th class="p-3">Description</th>
-    <th class="p-3">Lodged</th><th class="p-3">Status</th>
-  </tr></thead>
-  <tbody>
-    {% for c in complaints %}
-    <tr class="border-b">
-      <td class="p-3">{{ c.pk }}</td>
-      <td class="p-3">{{ c.equipment.name }}
-        <span class="font-mono text-slate-500">{{ c.equipment.serial_number }}</span></td>
-      <td class="p-3">{{ c.description|truncatechars:80 }}</td>
-      <td class="p-3">{{ c.created_at }}</td>
-      <td class="p-3">{{ c.get_status_display }}
-        {% if c.close_reason %}<span class="text-slate-500">
-          ({{ c.get_close_reason_display }})</span>{% endif %}</td>
-    </tr>
-    {% if c.is_awaiting_confirmation %}
-    <tr class="border-b bg-amber-50">
-      <td colspan="5" class="p-3">
-        <form method="post" action="{% url 'complaint_confirm' c.pk %}"
-              class="flex items-center gap-3">
-          {% csrf_token %}
-          <span class="font-medium">Is the machine functional now?</span>
-          <button name="functional" value="yes"
-            class="rounded bg-emerald-700 px-3 py-1 text-white">Yes, functional</button>
-          <button name="functional" value="no"
-            class="rounded bg-red-700 px-3 py-1 text-white">No, not functional</button>
-        </form>
-      </td>
-    </tr>
-    {% endif %}
-    {% empty %}
-    <tr><td colspan="5" class="p-6 text-center text-slate-500">
-      You have not lodged any complaints.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-card">
+  <table class="table">
+    <thead><tr>
+      <th>#</th><th>Equipment</th><th>Description</th><th>Lodged</th><th>Status</th>
+    </tr></thead>
+    <tbody>
+      {% for c in complaints %}
+      <tr class="row-hover">
+        <td class="tabular-nums">{{ c.pk }}</td>
+        <td>{{ c.equipment.name }}
+          <span class="font-mono text-xs text-slate-500 dark:text-slate-400">{{ c.equipment.serial_number }}</span></td>
+        <td>{{ c.description|truncatechars:80 }}</td>
+        <td class="whitespace-nowrap">{{ c.created_at|date:"Y-m-d H:i" }}</td>
+        <td>
+          {% if c.status == 'closed' %}<span class="badge-muted">{{ c.get_status_display }}</span>
+          {% elif c.status == 'attached' %}<span class="badge-repair">{{ c.get_status_display }}</span>
+          {% else %}<span class="badge-info">{{ c.get_status_display }}</span>{% endif %}
+          {% if c.close_reason %}<span class="text-xs text-slate-500 dark:text-slate-400">({{ c.get_close_reason_display }})</span>{% endif %}
+        </td>
+      </tr>
+      {% if c.is_awaiting_confirmation %}
+      <tr class="bg-amber-50 dark:bg-amber-500/10">
+        <td colspan="5">
+          <form method="post" action="{% url 'complaint_confirm' c.pk %}"
+                class="flex flex-wrap items-center gap-3">
+            {% csrf_token %}
+            <span class="font-medium">Is the machine functional now?</span>
+            <button name="functional" value="yes" class="btn-success btn-sm">Yes, functional</button>
+            <button name="functional" value="no" class="btn-danger btn-sm">No, not functional</button>
+          </form>
+        </td>
+      </tr>
+      {% endif %}
+      {% empty %}
+      <tr><td colspan="5" class="p-6 text-center text-slate-500 dark:text-slate-400">
+        You have not lodged any complaints.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

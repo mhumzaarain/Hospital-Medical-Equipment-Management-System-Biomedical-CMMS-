@@ -1,16 +1,18 @@
 {% extends "base.html" %}
 {% block title %}Close Complaint #{{ complaint.pk }}{% endblock %}
+{% block page_title %}Queue{% endblock %}
 {% block content %}
-<div class="mx-auto max-w-xl rounded bg-white p-6 shadow">
-  <h1 class="mb-2 text-xl font-bold">Close Complaint #{{ complaint.pk }}</h1>
-  <p class="mb-4 text-sm text-slate-600">
+<div class="card mx-auto max-w-xl p-6">
+  <h1 class="text-xl font-bold">Close Complaint #{{ complaint.pk }}</h1>
+  <p class="mb-5 mt-1 text-sm text-slate-500 dark:text-slate-400">
     {{ complaint.equipment }} — “{{ complaint.description|truncatechars:120 }}”
     by {{ complaint.reporter }} ({{ complaint.created_at }})
   </p>
   <form method="post" class="space-y-4">
     {% csrf_token %}
     {% for error in form.non_field_errors %}
-      <p class="text-sm text-red-700">{{ error }}</p>{% endfor %}
+      <p class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">{{ error }}</p>
+    {% endfor %}
     <div>
       <label class="mb-1 block text-sm font-medium">Reason</label>
       {{ form.close_reason }}
@@ -22,10 +24,13 @@
     <div>
       <label class="mb-1 block text-sm font-medium">Note</label>
       {{ form.close_note }}
-      <p class="text-xs text-slate-500">
+      <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
         e.g. “Already reported by Nurse Khan, complaint #482.”</p>
     </div>
-    <button class="rounded bg-slate-700 px-4 py-2 text-white">Close complaint</button>
+    <div class="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+      <a href="{% url 'complaint_queue' %}" class="btn-ghost">Back to queue</a>
+      <button class="btn-primary">Close complaint</button>
+    </div>
   </form>
 </div>
 {% endblock %}

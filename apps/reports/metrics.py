@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from django.db.models import Count, Q
 
-from apps.equipment.models import Equipment
+from apps.equipment.models import Equipment, EquipmentStatus
 from apps.maintenance.models import (
     CloseReason,
     Complaint,
@@ -196,6 +196,15 @@ def resolved_complaints_for_engineer(user, window_start, window_end):
             }
         )
     return sorted(rows, key=lambda r: r["resolved_at"], reverse=True)
+
+
+def equipment_working_percent():
+    active = Equipment.objects.exclude(status=EquipmentStatus.CONDEMNED)
+    total = active.count()
+    if total == 0:
+        return None
+    working = active.filter(status=EquipmentStatus.WORKING).count()
+    return round(100 * working / total)
 
 
 def recent_confirmations(window_start, window_end):

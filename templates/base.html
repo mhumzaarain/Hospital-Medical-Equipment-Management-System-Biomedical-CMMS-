@@ -7,69 +7,147 @@
   <title>{% block title %}{{ HOSPITAL_NAME }} CMMS{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
   <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+  <script>
+    (function () {
+      var t = localStorage.getItem("hemdesk-theme");
+      if (t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches))
+        document.documentElement.classList.add("dark");
+    })();
+  </script>
   <script src="{% static 'js/htmx.min.js' %}" defer></script>
+  <script src="{% static 'js/app.js' %}" defer></script>
   <script src="{% static 'js/alpine.min.js' %}" defer></script>
 </head>
-<body class="bg-slate-100 text-slate-900">
+<body class="bg-slate-100 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
 <div class="flex min-h-screen">
   {% if user.is_authenticated %}
-  <aside class="flex w-56 shrink-0 flex-col bg-sky-900 text-white">
+  {% with active=request.resolver_match.url_name %}
+  <aside class="flex w-60 shrink-0 flex-col bg-gradient-to-b from-sky-950 to-sky-900 text-white dark:border-r dark:border-slate-800 dark:from-slate-950 dark:to-slate-900">
     <a href="{% url 'home' %}"
-       class="flex items-center gap-2 border-b border-sky-800 px-4 py-4">
-      <img src="{% static 'img/favicon.png' %}" alt="HEMDESK" class="h-8 w-8 rounded">
+       class="flex items-center gap-2.5 border-b border-white/10 px-4 py-4">
+      <img src="{% static 'img/favicon.png' %}" alt="HEMDESK" class="h-8 w-8 rounded-lg">
       <span class="text-lg font-bold tracking-wide">HEMDESK</span>
     </a>
-    <nav class="flex-1 space-y-1 px-2 py-4 text-sm">
+    <nav class="flex-1 overflow-y-auto px-3 py-2">
+      <p class="nav-heading">Operations</p>
       <a href="{% url 'equipment_list' %}"
-         class="block rounded px-3 py-2 hover:bg-sky-800">Equipment</a>
+         class="nav-link {% if active in 'equipment_list equipment_detail equipment_create equipment_edit equipment_condemn' %}nav-link-active{% endif %}">
+        <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+        Equipment
+      </a>
       <a href="{% url 'complaint_new' %}"
-         class="block rounded px-3 py-2 hover:bg-sky-800">New Complaint</a>
+         class="nav-link {% if active == 'complaint_new' %}nav-link-active{% endif %}">
+        <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+        New Complaint
+      </a>
       <a href="{% url 'my_complaints' %}"
-         class="block rounded px-3 py-2 hover:bg-sky-800">My Complaints</a>
+         class="nav-link {% if active == 'my_complaints' %}nav-link-active{% endif %}">
+        <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/></svg>
+        My Complaints
+      </a>
       {% if user.is_engineer_or_admin %}
-        <a href="{% url 'complaint_queue' %}"
-           class="block rounded px-3 py-2 hover:bg-sky-800">Queue</a>
-        <a href="{% url 'dashboard' %}"
-           class="block rounded px-3 py-2 hover:bg-sky-800">Dashboard</a>
+      <p class="nav-heading">Insights</p>
+      <a href="{% url 'complaint_queue' %}"
+         class="nav-link {% if active in 'complaint_queue complaint_close workorder_detail workorder_complete' %}nav-link-active{% endif %}">
+        <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+        Queue
+      </a>
+      <a href="{% url 'dashboard' %}"
+         class="nav-link {% if active in 'dashboard engineer_resolved' %}nav-link-active{% endif %}">
+        <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+        Dashboard
+      </a>
       {% endif %}
       {% if user.is_staff %}
-        <a href="{% url 'admin:index' %}"
-           class="block rounded px-3 py-2 hover:bg-sky-800">Admin</a>
+      <p class="nav-heading">Admin</p>
+      <a href="{% url 'admin:index' %}" class="nav-link">
+        <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>
+        Admin
+      </a>
       {% endif %}
     </nav>
-    <div class="space-y-1 border-t border-sky-800 px-2 py-4 text-sm">
-      <div class="px-3 pb-1 text-xs text-sky-300">
-        {{ user.get_full_name|default:user.username }} ({{ user.employee_id }})
+    <div class="space-y-1 border-t border-white/10 px-3 py-3">
+      <div class="mb-1 flex items-center gap-2.5 px-2">
+        <span class="flex size-8 shrink-0 items-center justify-center rounded-full bg-sky-500/30 text-xs font-bold uppercase">
+          {% if user.first_name %}{{ user.first_name|slice:":1" }}{{ user.last_name|slice:":1" }}{% else %}{{ user.username|slice:":2" }}{% endif %}
+        </span>
+        <span class="min-w-0">
+          <span class="block truncate text-sm font-medium">{{ user.get_full_name|default:user.username }}</span>
+          <span class="block text-xs text-sky-200/70">{{ user.employee_id }}</span>
+        </span>
       </div>
+      <button type="button" onclick="toggleTheme()" class="nav-link">
+        <svg class="size-4 shrink-0 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="hidden size-4 shrink-0 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+        <span class="dark:hidden">Dark mode</span><span class="hidden dark:inline">Light mode</span>
+      </button>
       <a href="{% url 'password_change' %}"
-         class="block rounded px-3 py-2 hover:bg-sky-800">Change password</a>
+         class="nav-link {% if active == 'password_change' %}nav-link-active{% endif %}">
+        <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        Change password
+      </a>
       <form method="post" action="{% url 'logout' %}">
         {% csrf_token %}
-        <button class="block w-full rounded px-3 py-2 text-left hover:bg-sky-800">
+        <button class="nav-link">
+          <svg class="size-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
           Log out
         </button>
       </form>
     </div>
   </aside>
+  {% endwith %}
   {% endif %}
   <div class="flex min-w-0 flex-1 flex-col">
-    <header class="flex items-center border-b bg-white px-6 py-3">
+    <header class="flex h-14 items-center gap-4 border-b border-slate-200 bg-white/80 px-6 backdrop-blur dark:border-slate-800 dark:bg-slate-900/80">
       {% if user.is_authenticated %}
-        <span class="ml-auto text-sm text-slate-500">{{ HOSPITAL_NAME }}</span>
+        <h2 class="text-sm font-semibold text-slate-700 dark:text-slate-200">{% block page_title %}{% endblock %}</h2>
+        <span class="ml-auto text-sm text-slate-500 dark:text-slate-400">{{ HOSPITAL_NAME }}</span>
       {% else %}
         <a href="{% url 'home' %}" class="flex items-center gap-2">
-          <img src="{% static 'img/favicon.png' %}" alt="HEMDESK" class="h-8 w-8 rounded">
-          <span class="text-lg font-bold tracking-wide text-sky-900">HEMDESK</span>
+          <img src="{% static 'img/favicon.png' %}" alt="HEMDESK" class="h-8 w-8 rounded-lg">
+          <span class="text-lg font-bold tracking-wide text-sky-900 dark:text-sky-300">HEMDESK</span>
         </a>
+        <span class="ml-auto text-sm text-slate-500 dark:text-slate-400">{{ HOSPITAL_NAME }}</span>
       {% endif %}
     </header>
     <main class="flex-1 px-6 py-6">
-      <div class="mx-auto max-w-6xl">
-        {% include "partials/_messages.html" %}
+      <div class="mx-auto max-w-6xl animate-fade-up">
         {% block content %}{% endblock %}
       </div>
     </main>
   </div>
+</div>
+{% if messages %}
+<script>
+  window.djangoMessages = [
+    {% for message in messages %}{ level: "{{ message.tags|default:'info'|escapejs }}", text: "{{ message|escapejs }}" }{% if not forloop.last %},{% endif %}{% endfor %}
+  ];
+</script>
+{% endif %}
+<div x-data="toasts"
+     class="pointer-events-none fixed right-4 top-4 z-50 flex w-80 max-w-[calc(100vw-2rem)] flex-col gap-2">
+  <template x-for="t in items" :key="t.id">
+    <div class="card pointer-events-auto relative overflow-hidden p-3 pr-9 text-sm shadow-lg"
+         x-transition:enter="transition duration-200 ease-out"
+         x-transition:enter-start="translate-x-4 opacity-0"
+         x-transition:enter-end="translate-x-0 opacity-100"
+         x-transition:leave="transition duration-150 ease-in"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+      <div class="flex items-start gap-2.5">
+        <span class="mt-1.5 size-2 shrink-0 rounded-full"
+              :class="t.level.includes('error') ? 'bg-red-500'
+                      : t.level.includes('warning') ? 'bg-amber-500'
+                      : t.level.includes('success') ? 'bg-emerald-500' : 'bg-sky-500'"></span>
+        <span x-text="t.text"></span>
+      </div>
+      <button class="absolute right-2 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              @click="dismiss(t.id)" aria-label="Dismiss">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <span class="toast-progress absolute bottom-0 left-0 h-0.5 bg-sky-500/60"></span>
+    </div>
+  </template>
 </div>
 {% block extra_js %}{% endblock %}
 </body>

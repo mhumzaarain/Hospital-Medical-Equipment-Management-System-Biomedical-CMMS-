@@ -1,32 +1,36 @@
 {% extends "base.html" %}
 {% block title %}Complaints resolved — {{ engineer }}{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
 {% block content %}
-<div class="mb-4">
-  <a href="{% url 'dashboard' %}" class="text-sm text-sky-700 hover:underline">← Dashboard</a>
-  <h1 class="text-2xl font-bold">Complaints resolved by {{ engineer.get_full_name|default:engineer.username }}
-    <span class="text-base font-normal text-slate-500">({{ engineer.employee_id }}) · {{ total }} · last 30 days</span></h1>
+<div class="mb-5">
+  <a href="{% url 'dashboard' %}" class="link text-sm">← Dashboard</a>
+  <h1 class="mt-1 text-2xl font-bold">Complaints resolved by {{ engineer.get_full_name|default:engineer.username }}
+    <span class="text-base font-normal text-slate-500 dark:text-slate-400">({{ engineer.employee_id }}) · {{ total }} · last 30 days</span></h1>
 </div>
-<table class="w-full rounded bg-white shadow text-sm">
-  <thead><tr class="border-b text-left">
-    <th class="p-3">Equipment</th><th class="p-3">Type</th>
-    <th class="p-3">Resolved</th><th class="p-3">Remarks</th></tr></thead>
-  <tbody>
-    {% for r in rows %}
-    <tr class="border-b align-top">
-      <td class="p-3"><a class="text-sky-700 hover:underline"
-        href="{% url 'equipment_detail' r.equipment_id %}">{{ r.equipment_name }}</a>
-        <div class="text-slate-500">{{ r.equipment_model }} ·
-          <span class="font-mono">{{ r.equipment_serial }}</span></div></td>
-      <td class="p-3">{{ r.resolution_type }}</td>
-      <td class="p-3">{{ r.resolved_at|date:"Y-m-d H:i" }}</td>
-      <td class="p-3">
-        {% for remark in r.remarks %}<div>“{{ remark }}”</div>{% empty %}
-        <span class="text-slate-500">—</span>{% endfor %}</td>
-    </tr>
-    {% empty %}
-    <tr><td colspan="4" class="p-6 text-center text-slate-500">
-      Nothing resolved in this window.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="table-card">
+  <table class="table">
+    <thead><tr>
+      <th>Equipment</th><th>Type</th><th>Resolved</th><th>Remarks</th></tr></thead>
+    <tbody>
+      {% for r in rows %}
+      <tr class="row-hover">
+        <td><a class="link" href="{% url 'equipment_detail' r.equipment_id %}">{{ r.equipment_name }}</a>
+          <div class="text-xs text-slate-500 dark:text-slate-400">{{ r.equipment_model }} ·
+            <span class="font-mono">{{ r.equipment_serial }}</span></div></td>
+        <td>
+          {% if r.resolution_type == 'Repaired' %}<span class="badge-working">{{ r.resolution_type }}</span>
+          {% else %}<span class="badge-muted">{{ r.resolution_type }}</span>{% endif %}
+        </td>
+        <td class="whitespace-nowrap">{{ r.resolved_at|date:"Y-m-d H:i" }}</td>
+        <td>
+          {% for remark in r.remarks %}<div>“{{ remark }}”</div>{% empty %}
+          <span class="text-slate-500 dark:text-slate-400">—</span>{% endfor %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="p-6 text-center text-slate-500 dark:text-slate-400">
+        Nothing resolved in this window.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 {% endblock %}

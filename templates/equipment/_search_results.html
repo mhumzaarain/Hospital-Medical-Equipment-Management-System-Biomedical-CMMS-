@@ -1,13 +1,13 @@
 {% for eq in results %}
 <button type="button"
-        class="block w-full border-b px-3 py-2 text-left hover:bg-sky-50"
+        class="block w-full border-b border-slate-100 px-3 py-2 text-left text-sm transition-colors last:border-b-0 hover:bg-sky-50 dark:border-slate-800 dark:hover:bg-slate-800"
         @click="select({{ eq.pk }}, '{{ eq.name|escapejs }}',
                 '{{ eq.model_number|escapejs }}', '{{ eq.serial_number|escapejs }}',
                 '{{ eq.department|escapejs }}')">
   <span class="font-medium">{{ eq.name }}</span>
-  <span class="text-slate-500">{{ eq.model_number }} ·
-    <span class="font-mono">{{ eq.serial_number }}</span> · {{ eq.department }}</span>
+  <span class="text-slate-500 dark:text-slate-400">{{ eq.model_number }} ·
+    <span class="font-mono text-xs">{{ eq.serial_number }}</span> · {{ eq.department }}</span>
 </button>
 {% empty %}
-<div class="px-3 py-2 text-slate-500">No matching equipment.</div>
+<div class="px-3 py-2 text-sm text-slate-500 dark:text-slate-400">No matching equipment.</div>
 {% endfor %}

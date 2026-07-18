@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
@@ -72,21 +73,39 @@ def complaint_confirm(request, pk):
     return redirect("my_complaints")
 
 
-def _open_complaints_queryset():
-    return (
+def _open_complaints_queryset(request):
+    qs = (
         Complaint.objects.filter(
             status__in=[ComplaintStatus.OPEN, ComplaintStatus.ATTACHED]
         )
         .select_related("equipment__department", "reporter", "work_order")
         .order_by("-created_at")
     )
+    q = request.GET.get("q", "").strip()
+    if q:
+        qs = qs.filter(
+            Q(equipment__name__icontains=q)
+            | Q(equipment__serial_number__icontains=q)
+            | Q(description__icontains=q)
+            | Q(reporter__username__icontains=q)
+            | Q(reporter__first_name__icontains=q)
+            | Q(reporter__last_name__icontains=q)
+        )
+    state = request.GET.get("state", "")
+    if state == "unassigned":
+        qs = qs.filter(work_order__isnull=True)
+    elif state == "assigned":
+        qs = qs.filter(work_order__isnull=False)
+    return qs
 
 
 @login_required
 def complaint_queue(request):
     _require_engineer(request.user)
     return render(
-        request, "maintenance/queue.html", {"complaints": _open_complaints_queryset()}
+        request,
+        "maintenance/queue.html",
+        {"complaints": _open_complaints_queryset(request)},
     )
 
 
@@ -96,7 +115,7 @@ def complaint_queue_rows(request):
     return render(
         request,
         "maintenance/_queue_rows.html",
-        {"complaints": _open_complaints_queryset()},
+        {"complaints": _open_complaints_queryset(request)},
     )
 
 

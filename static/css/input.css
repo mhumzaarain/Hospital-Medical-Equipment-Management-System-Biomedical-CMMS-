@@ -1,2 +1,164 @@
 @import "tailwindcss";
 @source "../../templates";
+@source "../js/app.js";
+@source "../js/charts.js";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --animate-fade-up: fade-up 0.35s ease-out both;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes shimmer {
+    from { background-position: 200% 0; }
+    to   { background-position: -200% 0; }
+  }
+  @keyframes toast-bar {
+    from { width: 100%; }
+    to   { width: 0%; }
+  }
+}
+
+/* Chart.js reads these at render time; .dark swaps them (charts re-render on toggle). */
+:root {
+  --chart-tick: #64748b;
+  --chart-grid: rgb(100 116 139 / 0.15);
+  --chart-bar: #0284c7;
+  --chart-bar-hover: #0369a1;
+  --chart-tooltip-bg: #0f172a;
+  --chart-tooltip-fg: #f1f5f9;
+  --chart-cat-1: #0284c7;
+  --chart-cat-2: #b45309;
+  --chart-cat-3: #15803d;
+  --chart-cat-4: #b91c1c;
+  --chart-cat-5: #7c3aed;
+  --chart-cat-6: #0f766e;
+  --chart-cat-7: #be185d;
+  --chart-cat-8: #64748b;
+}
+.dark {
+  --chart-tick: #94a3b8;
+  --chart-grid: rgb(148 163 184 / 0.15);
+  --chart-bar: #38bdf8;
+  --chart-bar-hover: #7dd3fc;
+  --chart-tooltip-bg: #f1f5f9;
+  --chart-tooltip-fg: #0f172a;
+  --chart-cat-1: #38bdf8;
+  --chart-cat-2: #fbbf24;
+  --chart-cat-3: #4ade80;
+  --chart-cat-4: #f87171;
+  --chart-cat-5: #a78bfa;
+  --chart-cat-6: #2dd4bf;
+  --chart-cat-7: #f472b6;
+  --chart-cat-8: #94a3b8;
+}
+
+@layer components {
+  /* Surfaces */
+  .card, .table-card {
+    @apply rounded-xl border border-slate-200 bg-white shadow-sm
+           dark:border-slate-800 dark:bg-slate-900;
+  }
+  .card-hover {
+    @apply transition duration-200 hover:-translate-y-0.5 hover:shadow-md;
+  }
+
+  /* Buttons — shared base via multi-selector (v4: cannot @apply .btn) */
+  .btn, .btn-primary, .btn-danger, .btn-success, .btn-warn, .btn-ghost {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg
+           px-4 py-2 text-sm font-medium transition duration-150 active:scale-[.98]
+           focus-visible:outline-2 focus-visible:outline-offset-2
+           focus-visible:outline-sky-500 disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary { @apply bg-sky-700 text-white shadow-sm hover:bg-sky-600; }
+  .btn-danger  { @apply bg-red-700 text-white shadow-sm hover:bg-red-600; }
+  .btn-success { @apply bg-emerald-700 text-white shadow-sm hover:bg-emerald-600; }
+  .btn-warn    { @apply bg-amber-600 text-white shadow-sm hover:bg-amber-500; }
+  .btn-ghost {
+    @apply border border-slate-300 bg-white text-slate-700 hover:bg-slate-50
+           dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800;
+  }
+  .btn-sm { @apply px-3 py-1.5 text-xs; }
+
+  /* Badges (status pills) */
+  .badge, .badge-working, .badge-repair, .badge-danger, .badge-info, .badge-muted {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full
+           px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-working { @apply bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300; }
+  .badge-repair  { @apply bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300; }
+  .badge-danger  { @apply bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-300; }
+  .badge-info    { @apply bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300; }
+  .badge-muted   { @apply bg-slate-200 text-slate-600 dark:bg-slate-700/40 dark:text-slate-300; }
+
+  /* Form controls — one rule styles every Django widget inside <main>. Explicit
+     utility classes on an element still win (utilities layer beats components). */
+  .field,
+  main input:where(:not([type="checkbox"], [type="radio"], [type="hidden"], [type="submit"], [type="file"])),
+  main select,
+  main textarea {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm
+           text-slate-900 shadow-xs transition placeholder:text-slate-400
+           focus:border-sky-500 focus:ring-2 focus:ring-sky-500/30 focus:outline-none
+           dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100
+           dark:placeholder:text-slate-500;
+  }
+  main select { @apply pr-8; }
+  main input[type="checkbox"] { @apply size-4 rounded border-slate-300 accent-sky-600; }
+
+  /* Tables */
+  .table-card { @apply overflow-x-auto p-0; }
+  .table { @apply w-full text-sm; }
+  .table thead th {
+    @apply border-b border-slate-200 bg-slate-50 px-4 py-3 text-left text-xs
+           font-semibold uppercase tracking-wide text-slate-500
+           dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400;
+  }
+  .table tbody td { @apply border-b border-slate-100 px-4 py-3 align-top dark:border-slate-800; }
+  .table tbody tr:last-child td { @apply border-b-0; }
+  .row-hover { @apply transition-colors hover:bg-sky-50/60 dark:hover:bg-slate-800/60; }
+
+  /* Sidebar nav */
+  .nav-link, .nav-link-active {
+    @apply flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm
+           text-sky-100/90 transition-colors hover:bg-white/10 hover:text-white;
+  }
+  .nav-link-active { @apply bg-white/15 font-medium text-white; }
+  .nav-heading {
+    @apply px-3 pb-1 pt-4 text-[10px] font-semibold uppercase tracking-widest text-sky-200/60;
+  }
+
+  .link { @apply font-medium text-sky-700 hover:underline dark:text-sky-400; }
+
+  /* Skeleton shimmer (htmx loading) */
+  .skeleton {
+    border-radius: 0.375rem;
+    background: linear-gradient(90deg, var(--color-slate-200) 25%,
+                var(--color-slate-100) 50%, var(--color-slate-200) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s linear infinite;
+  }
+  .dark .skeleton {
+    background-image: linear-gradient(90deg, var(--color-slate-800) 25%,
+                var(--color-slate-700) 50%, var(--color-slate-800) 75%);
+  }
+
+  /* Toast auto-dismiss progress bar */
+  .toast-progress { animation: toast-bar 5s linear forwards; }
+}
+
+/* htmx indicators: hidden unless a request is in flight */
+.htmx-indicator { display: none; }
+.htmx-indicator.htmx-request { display: table-row-group; }
+div.htmx-indicator.htmx-request, span.htmx-indicator.htmx-request { display: block; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

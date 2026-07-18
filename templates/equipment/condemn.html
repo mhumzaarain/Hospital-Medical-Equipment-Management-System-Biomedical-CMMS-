@@ -1,25 +1,33 @@
 {% extends "base.html" %}
 {% block title %}Condemn {{ equipment.serial_number }}{% endblock %}
+{% block page_title %}Equipment{% endblock %}
 {% block content %}
-<div class="mx-auto max-w-xl rounded bg-white p-6 shadow">
-  <h1 class="mb-2 text-xl font-bold text-red-800">Condemn equipment</h1>
-  <p class="mb-4 text-sm text-slate-600">
-    {{ equipment }} will be permanently retired. Its record and full history
-    are preserved forever. Any active work order and open complaints will be
-    closed automatically. <strong>This cannot be undone.</strong>
-  </p>
-  <form method="post" class="space-y-4">
-    {% csrf_token %}
-    {% for field in form %}
-    <div>
-      <label class="mb-1 block text-sm font-medium">{{ field.label }}</label>
-      {{ field }}
-      {% if field.help_text %}<p class="text-xs text-slate-500">{{ field.help_text }}</p>{% endif %}
-      {% for error in field.errors %}<p class="text-sm text-red-700">{{ error }}</p>{% endfor %}
-    </div>
-    {% endfor %}
-    <button class="rounded bg-red-700 px-4 py-2 text-white hover:bg-red-600">
-      Condemn permanently</button>
-  </form>
+<div class="card mx-auto max-w-xl overflow-hidden">
+  <div class="border-b border-red-200 bg-red-50 px-6 py-4 dark:border-red-500/30 dark:bg-red-500/10">
+    <h1 class="text-xl font-bold text-red-800 dark:text-red-300">Condemn equipment</h1>
+    <p class="mt-1 text-sm text-red-700/80 dark:text-red-300/80">This cannot be undone.</p>
+  </div>
+  <div class="p-6">
+    <p class="mb-5 text-sm text-slate-600 dark:text-slate-300">
+      {{ equipment }} will be permanently retired. Its record and full history
+      are preserved forever. Any active work order and open complaints will be
+      closed automatically.
+    </p>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {% for field in form %}
+      <div>
+        <label class="mb-1 block text-sm font-medium" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ field.help_text }}</p>{% endif %}
+        {% for error in field.errors %}<p class="mt-1 text-sm text-red-700 dark:text-red-400">{{ error }}</p>{% endfor %}
+      </div>
+      {% endfor %}
+      <div class="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+        <a href="{% url 'equipment_detail' equipment.pk %}" class="btn-ghost">Cancel</a>
+        <button class="btn-danger">Condemn permanently</button>
+      </div>
+    </form>
+  </div>
 </div>
 {% endblock %}
