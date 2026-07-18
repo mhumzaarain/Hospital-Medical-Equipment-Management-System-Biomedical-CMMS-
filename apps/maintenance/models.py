@@ -46,6 +46,11 @@ class RemarkKind(models.TextChoices):
     SYSTEM = "system", "System"
 
 
+class FunctionalConfirmation(models.TextChoices):
+    FUNCTIONAL = "functional", "Functional"
+    NOT_FUNCTIONAL = "not_functional", "Not functional"
+
+
 ACTIVE_WORKORDER_STATUSES = (WorkOrderStatus.OPEN, WorkOrderStatus.IN_PROGRESS)
 
 
@@ -149,6 +154,10 @@ class Complaint(NoDeleteModel):
         related_name="complaints_closed",
     )
     closed_at = models.DateTimeField(null=True, blank=True)
+    functional_confirmation = models.CharField(
+        max_length=20, choices=FunctionalConfirmation.choices, null=True, blank=True
+    )
+    confirmed_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
