@@ -90,10 +90,15 @@ count per engineer, over the same rolling 30-day window (by `closed_at`).
 
 `per_engineer_resolved(window_start, window_end) -> list[dict]` returns
 `{name, employee_id, user_id, resolved_count}`, computed by iterating resolved
-complaints in the window (`status=closed`, `close_reason in
-{resolved, duplicate, no_fault}`, `closed_at` in window) and crediting each id
-from `resolving_engineer_ids`. Only engineers with a non-zero count appear,
-ordered by count descending. Each count links to the drill-down.
+complaints in the window (`status=closed`, `closed_at` in window) and crediting
+each id from `resolving_engineer_ids`. A complaint counts as resolved when it is
+a **dismissal** (`close_reason in {duplicate, no_fault}`) **or** a **genuine
+repair** (`close_reason=resolved` AND its `work_order.outcome=repaired`).
+Complaints auto-closed by **condemnation** (resolved but `outcome=condemned`, or
+no work order) are **excluded** — condemning a device is not "resolving" a
+complaint in the made-good sense; condemnation lives in the equipment status
+history. Only engineers with a non-zero count appear, ordered by count
+descending. Each count links to the drill-down.
 
 ### 4.3 Drill-down page
 `GET /dashboard/engineer/<user_id>/resolved/` — engineer/admin only
