@@ -9,6 +9,7 @@ dependencies = [
     "psycopg[binary]~=3.2",
     "procrastinate[django]~=3.5",
     "gunicorn~=23.0",
+    "python-dotenv~=1.0",
 ]
 
 [dependency-groups]
