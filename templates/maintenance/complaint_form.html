@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}New Complaint{% endblock %}
+{% block page_title %}New Complaint{% endblock %}
 {% block content %}
-<div class="mx-auto max-w-xl rounded bg-white p-6 shadow"
+<div class="card mx-auto max-w-xl p-6"
      x-data="{ picked: null, name: '', model: '', serial: '', dept: '',
                select(id, name, model, serial, dept) {
                  this.picked = id; this.name = name; this.model = model;
@@ -9,27 +10,27 @@
                  document.getElementById('id_equipment').value = id;
                  document.getElementById('search-results').innerHTML = '';
                } }">
-  <h1 class="mb-4 text-xl font-bold">Lodge a Complaint</h1>
-  <p class="mb-4 text-sm text-slate-600">
+  <h1 class="text-xl font-bold">Lodge a Complaint</h1>
+  <p class="mb-5 mt-1 text-sm text-slate-500 dark:text-slate-400">
     Reporting as <strong>{{ user.get_full_name|default:user.username }}</strong>
     (ID: {{ user.employee_id }}) — attached automatically.
   </p>
   <div class="mb-4">
     <label class="mb-1 block text-sm font-medium">Find the equipment</label>
     <input type="search" name="q" placeholder="Type serial number, name or model…"
-           class="w-full rounded border border-slate-300 px-3 py-2"
+           autocomplete="off"
            hx-get="{% url 'equipment_search' %}" hx-trigger="input changed delay:300ms"
            hx-target="#search-results" hx-vals='{"exclude_unavailable": "1"}'>
-    <div id="search-results" class="mt-1 rounded border border-slate-200 bg-white
-                                    empty:border-0 shadow-sm"></div>
+    <div id="search-results"
+         class="mt-1 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm empty:border-0 empty:shadow-none dark:border-slate-700 dark:bg-slate-900"></div>
   </div>
   <template x-if="picked">
-    <div class="mb-4 rounded border border-sky-200 bg-sky-50 p-3 text-sm">
-      <div><span class="text-slate-500">Equipment:</span> <span x-text="name"></span>
+    <div class="mb-4 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm dark:border-sky-500/30 dark:bg-sky-500/10">
+      <div><span class="text-slate-500 dark:text-slate-400">Equipment:</span> <span x-text="name"></span>
            <span x-text="model"></span></div>
-      <div><span class="text-slate-500">Serial #:</span>
+      <div><span class="text-slate-500 dark:text-slate-400">Serial #:</span>
            <span class="font-mono" x-text="serial"></span></div>
-      <div><span class="text-slate-500">Department:</span> <span x-text="dept"></span></div>
+      <div><span class="text-slate-500 dark:text-slate-400">Department:</span> <span x-text="dept"></span></div>
     </div>
   </template>
   <form method="post" class="space-y-4">
@@ -39,13 +40,11 @@
       <label class="mb-1 block text-sm font-medium">What is wrong?</label>
       {{ form.description }}
       {% for error in form.description.errors %}
-        <p class="text-sm text-red-700">{{ error }}</p>{% endfor %}
+        <p class="mt-1 text-sm text-red-700 dark:text-red-400">{{ error }}</p>{% endfor %}
       {% for error in form.equipment.errors %}
-        <p class="text-sm text-red-700">Please pick the equipment above.</p>{% endfor %}
+        <p class="mt-1 text-sm text-red-700 dark:text-red-400">Please pick the equipment above.</p>{% endfor %}
     </div>
-    <button class="rounded bg-sky-800 px-4 py-2 text-white hover:bg-sky-700"
-            :disabled="!picked" :class="{ 'opacity-50': !picked }">
-      Submit Complaint</button>
+    <button class="btn-primary w-full" :disabled="!picked">Submit Complaint</button>
   </form>
 </div>
 {% endblock %}
