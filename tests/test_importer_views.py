@@ -56,3 +56,13 @@ def test_bad_file_shows_error(engineer_client):
     response = _upload(engineer_client, text="only-header")
     assert response.status_code == 200
     assert b"header row" in response.content
+
+
+def test_corrupt_xlsx_shows_error_instead_of_500(engineer_client):
+    response = engineer_client.post(
+        reverse("equipment_import"),
+        {"file": SimpleUploadedFile("something.xlsx", b"not a real xlsx file")},
+    )
+    assert response.status_code == 200
+    content = response.content.lower()
+    assert b"try again" in content or b"error" in content

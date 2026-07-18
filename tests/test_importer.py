@@ -1,4 +1,5 @@
 import io
+from datetime import date, datetime
 
 import pytest
 from django.core.exceptions import PermissionDenied
@@ -57,6 +58,31 @@ def test_parse_row_with_more_cells_than_headers_keeps_extras():
     f = _csv("name,serial_number,department\nPump,SN-1,ICU,stray\n")
     rows = parse_upload(f, "e.csv")
     assert rows[0]["column_4"] == "stray"
+
+
+def test_parse_xlsx_native_date_cell_normalizes_to_iso():
+    wb = Workbook()
+    ws = wb.active
+    ws.append(["name", "serial_number", "department", "purchase_date"])
+    ws.append(["Pump", "SN-3", "ICU", datetime(2021, 3, 15)])
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    rows = parse_upload(buf, "equip.xlsx")
+    assert rows[0]["purchase_date"] == "2021-03-15"
+
+
+def test_validate_normalized_native_date_row(department):
+    rows = [_row(purchase_date="2021-03-15")]
+    results = validate_rows(rows)
+    assert results[0].ok
+    assert results[0].data["purchase_date"] == date(2021, 3, 15)
+
+
+def test_parse_csv_rejects_non_utf8_bytes():
+    bad = "name,serial_number,department\nInfusión,SN-9,ICU\n".encode("cp1252")
+    with pytest.raises(ImportFormatError):
+        parse_upload(io.BytesIO(bad), "equip.csv")
 
 
 def _row(**overrides):

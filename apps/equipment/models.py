@@ -23,9 +23,9 @@ class Department(models.Model):
 
 class Equipment(NoDeleteModel):
     name = models.CharField(max_length=200)
-    manufacturer = models.CharField(max_length=200)
+    manufacturer = models.CharField(max_length=200, blank=True)
     vendor = models.CharField(max_length=200, blank=True)
-    model_number = models.CharField(max_length=100)
+    model_number = models.CharField(max_length=100, blank=True)
     serial_number = models.CharField(max_length=100, unique=True)
     department = models.ForeignKey(
         Department, on_delete=models.PROTECT, related_name="equipment"

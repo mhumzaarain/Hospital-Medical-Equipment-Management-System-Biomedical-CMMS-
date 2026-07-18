@@ -18,18 +18,38 @@ class ImportFormatError(Exception):
     pass
 
 
+def _stringify(c):
+    if isinstance(c, datetime):
+        return c.date().isoformat()
+    if isinstance(c, date):
+        return c.isoformat()
+    return "" if c is None else str(c).strip()
+
+
 def parse_upload(file_obj, filename) -> list[dict]:
     """Return one {header: cell} dict per data row. Headers lower-cased and
-    stripped; values stringified and stripped ("" for empty cells)."""
+    stripped; values stringified and stripped ("" for empty cells).
+    Cells beyond the header count get synthetic keys column_N (1-based
+    position) and flow into `extra` downstream."""
     name = filename.lower()
     if name.endswith(".csv"):
-        raw = file_obj.read().decode("utf-8-sig")
+        try:
+            raw = file_obj.read().decode("utf-8-sig")
+        except UnicodeDecodeError as exc:
+            raise ImportFormatError(
+                "Could not read the file — save it as UTF-8 CSV or .xlsx and try again."
+            ) from exc
         table = list(csv.reader(io.StringIO(raw)))
     elif name.endswith(".xlsx"):
         from openpyxl import load_workbook
 
-        ws = load_workbook(file_obj, read_only=True, data_only=True).active
-        table = [list(row) for row in ws.iter_rows(values_only=True)]
+        try:
+            ws = load_workbook(file_obj, read_only=True, data_only=True).active
+            table = [list(row) for row in ws.iter_rows(values_only=True)]
+        except Exception as exc:
+            raise ImportFormatError(
+                "Could not read the file — save it as UTF-8 CSV or .xlsx and try again."
+            ) from exc
     else:
         raise ImportFormatError("Only .csv and .xlsx files are supported.")
 
@@ -40,7 +60,7 @@ def parse_upload(file_obj, filename) -> list[dict]:
     headers = [str(h or "").strip().lower() for h in table[0]]
     rows = []
     for raw_row in table[1:]:
-        cells = ["" if c is None else str(c).strip() for c in raw_row]
+        cells = [_stringify(c) for c in raw_row]
         row_dict = dict(zip(headers, cells[:len(headers)]))
         # Add extra cells beyond header count with synthetic keys (column_N)
         for i, cell in enumerate(cells[len(headers):], start=len(headers) + 1):
