@@ -70,3 +70,25 @@ def generate_monthly_report(month_iso, requested_by_id=None):
         report.status = ReportStatus.FAILED
         report.save(update_fields=["status"])
         raise
+
+
+@app.task(name="ai.process_manual", retry=2)
+def process_manual(manual_id):
+    from . import manuals
+    from .models import ManualStatus, ServiceManual
+
+    manual = ServiceManual.objects.get(pk=manual_id)
+    try:
+        manuals.process(manual)
+    except Exception:
+        manual.status = ManualStatus.FAILED
+        manual.status_note = "processing error"
+        manual.save(update_fields=["status", "status_note"])
+        raise
+
+
+@app.task(name="ai.answer_assistant_chat", retry=0)
+def answer_assistant_chat(message_id):
+    from . import assistant
+
+    assistant.answer(message_id)

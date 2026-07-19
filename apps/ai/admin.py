@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import RiskScoringConfig
+from .models import RiskScoringConfig, ServiceManual
 
 
 @admin.register(RiskScoringConfig)
@@ -20,3 +20,8 @@ class RiskScoringConfigAdmin(admin.ModelAdmin):
 
         compute_risk_scores.defer()
         self.message_user(request, "Risk recomputation queued.")
+
+
+@admin.register(ServiceManual)
+class ServiceManualAdmin(admin.ModelAdmin):
+    list_display = ("title", "manufacturer", "model_number", "status")
