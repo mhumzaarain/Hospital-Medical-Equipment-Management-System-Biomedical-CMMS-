@@ -6,6 +6,15 @@ from apps.ai import client, tasks
 from apps.reports.models import MonthlyReport, ReportStatus
 
 
+@pytest.fixture(autouse=True)
+def isolated_media_root(settings, tmp_path):
+    # Each test in this module saves a real PDF via FileField/FileSystemStorage
+    # (only render_monthly_pdf is faked). Point MEDIA_ROOT at a throwaway
+    # tmp_path so runs don't leak files into the real project media/ dir and
+    # so same-named months across tests/runs can't collide on disk.
+    settings.MEDIA_ROOT = tmp_path
+
+
 @pytest.fixture
 def fake_pdf(monkeypatch):
     from apps.reports import pdf
@@ -41,3 +50,5 @@ def test_generate_is_rerunnable(db, fake_pdf, fake_llm):
     tasks.generate_monthly_report.func("2026-06")
     tasks.generate_monthly_report.func("2026-06")
     assert MonthlyReport.objects.filter(month=date(2026, 6, 1)).count() == 1
+    report = MonthlyReport.objects.get(month=date(2026, 6, 1))
+    assert report.pdf.name == "reports/monthly-2026-06.pdf"

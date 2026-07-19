@@ -45,7 +45,8 @@ def generate_monthly_report(month_iso, requested_by_id=None):
     month = datetime.strptime(month_iso, "%Y-%m").date()
     report, _ = MonthlyReport.objects.get_or_create(month=month)
     report.status = ReportStatus.GENERATING
-    report.requested_by_id = requested_by_id
+    if requested_by_id is not None:
+        report.requested_by_id = requested_by_id
     report.save(update_fields=["status", "requested_by"])
     try:
         report.metrics = metrics.month_metrics(month)
@@ -55,6 +56,8 @@ def generate_monthly_report(month_iso, requested_by_id=None):
             )
         except client.LLMUnavailable:
             report.narrative = None
+        if report.pdf:
+            report.pdf.delete(save=False)
         report.pdf.save(
             f"monthly-{month_iso}.pdf",
             ContentFile(pdf.render_monthly_pdf(report)),
