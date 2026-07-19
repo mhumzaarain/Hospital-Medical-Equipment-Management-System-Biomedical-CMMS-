@@ -10,6 +10,11 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
+# WeasyPrint's runtime libraries (PDF rendering, Task 6).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpango-1.0-0 libpangoft2-1.0-0 libharfbuzz0b libharfbuzz-subset0 \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install dependencies first (cached layer) from the lockfile, without dev deps.
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev

@@ -11,6 +11,7 @@ dependencies = [
     "gunicorn~=23.0",
     "python-dotenv~=1.0",
     "httpx~=0.28",
+    "weasyprint~=63.0",
 ]
 
 [dependency-groups]
