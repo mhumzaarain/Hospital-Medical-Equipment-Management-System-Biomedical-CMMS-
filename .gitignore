@@ -1,8 +1,27 @@
+# Python
 __pycache__/
 *.pyc
-.env
-staticfiles/
-bin/
+*.pyo
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.ipynb_checkpoints/
+
+# Environments & secrets
+.env
+.venv/
+
+# Django runtime artifacts
+staticfiles/
+media/
+db.sqlite3
+
+# Local tooling
+bin/
+.claude/
+
+# Agent workspaces
 .superpowers/
 superpowers/
