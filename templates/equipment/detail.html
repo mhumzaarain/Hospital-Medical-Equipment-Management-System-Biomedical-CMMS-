@@ -57,6 +57,16 @@
       {% endif %}
     </div>
     {% endif %}
+    {% if service_manual %}
+    <p class="text-sm mt-2">
+      Manual:
+      {% if service_manual.file %}
+      <a class="link" href="{{ service_manual.file.url }}">{{ service_manual.title }}</a>
+      {% else %}
+      {{ service_manual.title }}
+      {% endif %}
+    </p>
+    {% endif %}
   </div>
   <div class="card p-5">
     <h2 class="mb-3 font-semibold">Status History</h2>

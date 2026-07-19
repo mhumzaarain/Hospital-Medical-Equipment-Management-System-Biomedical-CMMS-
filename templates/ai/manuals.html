@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Service manuals{% endblock %}
+{% block page_title %}Manuals{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <h1 class="text-xl font-semibold mb-4">Service manuals</h1>
+  <form method="post" enctype="multipart/form-data" class="card p-4 mb-6 grid gap-3">
+    {% csrf_token %}
+    <input class="input" name="manufacturer" placeholder="Manufacturer" required>
+    <input class="input" name="model_number" placeholder="Model number" required>
+    <input class="input" name="title" placeholder="Manual title" required>
+    <input type="file" name="file" accept=".pdf" required>
+    <button type="submit" class="btn btn-primary">Upload manual</button>
+    <p class="text-sm text-muted">Text-based PDFs only — scanned/image-only manuals can't be indexed yet.</p>
+  </form>
+  <table class="w-full text-sm">
+    <thead><tr><th>Title</th><th>Model</th><th>Status</th><th>Pages</th></tr></thead>
+    <tbody>
+      {% for m in manuals %}
+      <tr>
+        <td>{% if m.file %}<a class="link" href="{{ m.file.url }}">{{ m.title }}</a>{% else %}{{ m.title }}{% endif %}</td>
+        <td>{{ m.manufacturer }} {{ m.model_number }}</td>
+        <td><span class="badge">{{ m.get_status_display }}</span>
+            {% if m.status_note %}<span class="text-sm text-muted">{{ m.status_note }}</span>{% endif %}</td>
+        <td>{{ m.page_count }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-muted">No manuals uploaded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
