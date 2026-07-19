@@ -39,6 +39,10 @@ First start with the bundled container, pull the default model once:
 Everything degrades gracefully with no LLM: reports generate without the
 narrative, risk scores compute without explanations.
 
+Privacy note: prompts include complaint and remark free-text. The default
+bundled Ollama runs locally, so nothing leaves your deployment — but if you
+point `LLM_BASE_URL` at an external endpoint, that text is sent there.
+
 ## Demo accounts & login
 
 `seed_demo` creates ready-to-use accounts so you can log in and explore the UI

@@ -49,6 +49,21 @@ def test_generate_defers_task(client, engineer, monkeypatch, db):
     assert deferred == {"month_iso": "2026-06", "requested_by_id": engineer.id}
 
 
+@pytest.mark.parametrize("month", ["2026-13", "2026-00", "garbage", ""])
+def test_generate_rejects_invalid_month(client, engineer, monkeypatch, db, month):
+    deferred = {}
+
+    from apps.ai import tasks
+
+    monkeypatch.setattr(
+        tasks.generate_monthly_report, "defer", lambda **kw: deferred.update(kw)
+    )
+    client.force_login(engineer)
+    response = client.post(reverse("report_generate"), {"month": month})
+    assert response.status_code == 302
+    assert deferred == {}
+
+
 def test_download_streams_pdf(client, engineer, ready_report):
     client.force_login(engineer)
     response = client.get(reverse("report_download", args=[ready_report.pk]))

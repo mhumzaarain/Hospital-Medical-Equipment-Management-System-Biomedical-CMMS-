@@ -108,7 +108,7 @@ def report_generate(request):
     from apps.ai import tasks
 
     month = request.POST.get("month", "")
-    if not re.fullmatch(r"\d{4}-\d{2}", month):
+    if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", month):
         messages.error(request, "Pick a month first.")
         return redirect("report_list")
     tasks.generate_monthly_report.defer(
