@@ -1,3 +1,5 @@
+🚧 Work in Progress: This repository is currently under development. Expect incomplete features, breaking changes, and ongoing updates
+
 # Biomedical CMMS
 
 Hospital Medical Equipment Management System — track medical equipment and
