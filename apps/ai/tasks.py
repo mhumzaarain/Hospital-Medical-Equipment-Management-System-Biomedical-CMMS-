@@ -85,3 +85,10 @@ def process_manual(manual_id):
         manual.status_note = "processing error"
         manual.save(update_fields=["status", "status_note"])
         raise
+
+
+@app.task(name="ai.answer_assistant_chat", retry=0)
+def answer_assistant_chat(message_id):
+    from . import assistant
+
+    assistant.answer(message_id)
