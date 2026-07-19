@@ -1,3 +1,5 @@
+🚧 Work in Progress: This repository is currently under development. Expect incomplete features, breaking changes, and ongoing updates
+
 # Biomedical CMMS
 
 Hospital Medical Equipment Management System — track medical equipment and
@@ -107,3 +109,13 @@ admin password; all real people are managed in the app.
 - Design spec: `docs/superpowers/specs/`
 - Implementation plan: `docs/superpowers/plans/`
 - Deferred work & pre-production hardening: `docs/FOLLOWUPS.md`
+
+## License
+
+Copyright (C) 2026 Muhammad Humza Arain
+
+This project is licensed under the **GNU Affero General Public License v3.0**
+(AGPL-3.0). You may use, modify, and distribute it under the terms of that
+license; if you run a modified version as a network service, you must make the
+complete corresponding source code available to its users. See the
+[`LICENSE`](LICENSE) file for the full text.

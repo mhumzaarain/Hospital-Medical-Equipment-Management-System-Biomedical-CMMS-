@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Import Equipment{% endblock %}
+{% block page_title %}Equipment{% endblock %}
+{% block content %}
+<div class="card mx-auto max-w-xl p-6">
+  <h1 class="text-xl font-bold">Import equipment</h1>
+  <p class="mb-5 mt-1 text-sm text-slate-500 dark:text-slate-400">
+    Upload a .csv or .xlsx file to bulk-register equipment.
+  </p>
+  <form method="post" enctype="multipart/form-data" class="space-y-4">
+    {% csrf_token %}
+    <div>
+      <label class="mb-1 block text-sm font-medium" for="id_file">File</label>
+      <input type="file" name="file" id="id_file" accept=".csv,.xlsx" required class="field">
+    </div>
+    <label class="flex items-center gap-2 text-sm">
+      <input type="checkbox" name="create_missing_departments" value="1">
+      Create missing departments
+    </label>
+    <p class="text-sm text-slate-500 dark:text-slate-400">
+      Need the format? Download the
+      <a href="{% static 'samples/equipment_sample.csv' %}" class="link">sample CSV</a>.
+      Required columns: name, serial_number, department.
+    </p>
+    <div class="flex justify-end gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+      <button class="btn-primary">Preview import</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
