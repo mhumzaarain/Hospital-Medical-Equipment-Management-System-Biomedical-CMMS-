@@ -2,8 +2,12 @@
 The device is never inferred from text — it always comes in as a model
 instance from the page the chat lives on."""
 
+import logging
+
 from . import client, retrieval
 from .models import AssistantMessage, AssistantRole, ServiceManual
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
     "You are an advisory assistant for hospital biomedical engineers, helping "
@@ -99,12 +103,17 @@ def answer(message_id) -> AssistantMessage:
     question = AssistantMessage.objects.select_related(
         "equipment__department", "work_order", "user"
     ).get(pk=message_id)
-    messages = build_messages(
-        question.equipment, question.work_order, question.content
-    )
     try:
+        messages = build_messages(
+            question.equipment, question.work_order, question.content
+        )
         content = client.chat(messages, interactive=True)
     except client.LLMUnavailable:
+        content = UNAVAILABLE_TEXT
+    except Exception:
+        # The panel polls until a reply row exists, so every failure must
+        # still persist a visible answer — never leave the thread hanging.
+        logger.exception("assistant answer failed for message %s", message_id)
         content = UNAVAILABLE_TEXT
     return AssistantMessage.objects.create(
         equipment=question.equipment,

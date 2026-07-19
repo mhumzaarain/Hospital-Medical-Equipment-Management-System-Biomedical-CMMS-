@@ -67,6 +67,21 @@ def test_answer_failure_writes_unavailable_message(
     assert "not available" in reply.content
 
 
+def test_answer_unexpected_error_still_writes_reply(
+    equipment, engineer, monkeypatch, db
+):
+    def _boom(*a, **kw):
+        raise RuntimeError("db hiccup")
+
+    monkeypatch.setattr(assistant, "build_messages", _boom)
+    question = AssistantMessage.objects.create(
+        equipment=equipment, user=engineer, role="user", content="hi"
+    )
+    reply = assistant.answer(question.id)
+    assert reply.role == "assistant"
+    assert "not available" in reply.content
+
+
 def test_answer_uses_interactive_mode(equipment, engineer, monkeypatch, db):
     seen = {}
 

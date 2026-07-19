@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
@@ -59,6 +61,18 @@ def test_reupload_replaces_same_model(engineer_client, monkeypatch, db):
     _upload(engineer_client, title="C2 Manual rev B")
     assert ServiceManual.objects.count() == 1
     assert ServiceManual.objects.get().title == "C2 Manual rev B"
+
+
+def test_reupload_deletes_old_file_from_storage(engineer_client, monkeypatch, db):
+    from apps.ai import tasks
+
+    monkeypatch.setattr(tasks.process_manual, "defer", lambda **kw: None)
+    _upload(engineer_client)
+    old_path = ServiceManual.objects.get().file.path
+    _upload(engineer_client, file=SimpleUploadedFile("rev-b.pdf", b"%PDF-1.4 v2"))
+    manual = ServiceManual.objects.get()
+    assert not os.path.exists(old_path)
+    assert os.path.exists(manual.file.path)
 
 
 def test_equipment_detail_links_ready_manual(

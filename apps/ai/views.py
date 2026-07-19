@@ -32,6 +32,11 @@ class ManualListView(RoleRequiredMixin, View):
         if not all([manufacturer, model_number, title, upload]):
             messages.error(request, "All fields including the PDF are required.")
             return redirect("manual_list")
+        existing = ServiceManual.objects.filter(
+            manufacturer__iexact=manufacturer, model_number__iexact=model_number
+        ).first()
+        if existing and existing.file:
+            existing.file.delete(save=False)
         manual, _ = ServiceManual.objects.update_or_create(
             manufacturer__iexact=manufacturer,
             model_number__iexact=model_number,
