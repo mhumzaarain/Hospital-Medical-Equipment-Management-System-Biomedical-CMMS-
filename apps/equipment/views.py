@@ -81,6 +81,10 @@ class EquipmentDetailView(LoginRequiredMixin, DetailView):
         ctx["completed_repair_count"] = eq.work_orders.filter(
             status="completed"
         ).count()
+        if self.request.user.is_engineer_or_admin:
+            from apps.ai import services as ai_services
+
+            ctx["risk_assessment"] = ai_services.latest_assessment(eq)
         return ctx
 
 

@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-semibold">Monthly reports</h1>
+    <form method="post" action="{% url 'report_generate' %}" class="flex gap-2">
+      {% csrf_token %}
+      <input type="month" name="month" required class="input">
+      <button type="submit" class="btn btn-primary">Generate now</button>
+    </form>
+  </div>
+  <table class="w-full text-sm">
+    <thead><tr><th>Month</th><th>Status</th><th>Generated</th><th></th></tr></thead>
+    <tbody>
+      {% for r in reports %}
+      <tr>
+        <td>{{ r.month|date:"Y-m" }}</td>
+        <td><span class="badge">{{ r.get_status_display }}</span></td>
+        <td>{{ r.generated_at|date:"Y-m-d H:i"|default:"—" }}</td>
+        <td>{% if r.pdf %}<a class="link" href="{% url 'report_download' r.pk %}">Download PDF</a>{% endif %}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-muted">No reports yet — generate one above.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

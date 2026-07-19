@@ -38,6 +38,25 @@
       <a href="{% url 'equipment_condemn' equipment.pk %}" class="btn-danger btn-sm">Condemn…</a>
     </div>
     {% endif %}
+    {% if risk_assessment %}
+    <div class="mt-5 border-t border-slate-100 pt-4 dark:border-slate-800">
+      <div class="flex flex-wrap items-center gap-2">
+        <h2 class="font-semibold">Risk</h2>
+        <span class="badge-info">score {{ risk_assessment.score }}</span>
+        {% if risk_assessment.score >= risk_assessment.factors.high_risk_threshold %}
+        <span class="badge-danger">High risk</span>
+        {% endif %}
+      </div>
+      <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+        {{ risk_assessment.factors.repairs_in_window }} repair(s) in the last
+        {{ risk_assessment.factors.window_months }} months ·
+        updated {{ risk_assessment.generated_at|date:"Y-m-d" }}
+      </p>
+      {% if risk_assessment.narrative %}
+      <p class="mt-2 text-sm">{{ risk_assessment.narrative }}</p>
+      {% endif %}
+    </div>
+    {% endif %}
   </div>
   <div class="card p-5">
     <h2 class="mb-3 font-semibold">Status History</h2>

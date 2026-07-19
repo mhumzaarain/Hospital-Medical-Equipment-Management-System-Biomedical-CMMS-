@@ -25,6 +25,7 @@ services:
              gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3"
     volumes:
       - staticfiles:/app/staticfiles
+      - media:/app/media
     depends_on:
       db:
         condition: service_healthy
@@ -35,6 +36,8 @@ services:
     environment:
       POSTGRES_HOST: db
     command: python manage.py procrastinate worker
+    volumes:
+      - media:/app/media
     depends_on:
       db:
         condition: service_healthy
@@ -49,6 +52,13 @@ services:
     depends_on:
       - web
 
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama:/root/.ollama
+
 volumes:
   pgdata:
   staticfiles:
+  ollama:
+  media:

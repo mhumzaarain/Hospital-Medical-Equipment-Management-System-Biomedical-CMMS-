@@ -1,0 +1,54 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: sans-serif; font-size: 12px; color: #111; }
+  h1 { font-size: 20px; } h2 { font-size: 15px; margin-top: 18px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+  th, td { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+  .muted { color: #666; }
+</style>
+</head>
+<body>
+  <h1>Monthly Maintenance Report — {{ m.month }}</h1>
+
+  <h2>Executive summary</h2>
+  {% if report.narrative %}<p>{{ report.narrative }}</p>
+  {% else %}<p class="muted">Narrative unavailable (LLM offline at generation time).</p>{% endif %}
+
+  <h2>Repairs completed</h2><p>{{ m.repairs_completed }}</p>
+
+  <h2>Work orders still open (at generation time)</h2><p>{{ m.open_workorders }}</p>
+
+  <h2>Critical-asset downtime (hours, by department)</h2>
+  <table>{% for dept, hours in m.downtime_by_department.items %}
+    <tr><td>{{ dept }}</td><td>{{ hours }}</td></tr>
+  {% empty %}<tr><td class="muted" colspan="2">No downtime recorded.</td></tr>{% endfor %}</table>
+
+  <h2>Complaints per department</h2>
+  <table>{% for dept, n in m.complaints_per_department.items %}
+    <tr><td>{{ dept }}</td><td>{{ n }}</td></tr>
+  {% empty %}<tr><td class="muted" colspan="2">None.</td></tr>{% endfor %}</table>
+
+  <h2>Most-complained devices</h2>
+  <table>{% for row in m.most_complained_devices %}
+    <tr><td>{{ row.0 }}</td><td>{{ row.1 }}</td></tr>
+  {% empty %}<tr><td class="muted" colspan="2">None.</td></tr>{% endfor %}</table>
+
+  <h2>Fault categories</h2>
+  <table>{% for label, n in m.fault_category_counts.items %}
+    <tr><td>{{ label }}</td><td>{{ n }}</td></tr>
+  {% empty %}<tr><td class="muted" colspan="2">None.</td></tr>{% endfor %}</table>
+
+  <h2>Delayed repairs</h2>
+  <table>{% for d in m.delayed_repairs %}
+    <tr><td>WO #{{ d.wo_id }}</td><td>{{ d.equipment }}</td><td>{{ d.latest_delay_note }}</td></tr>
+  {% empty %}<tr><td class="muted" colspan="3">None flagged.</td></tr>{% endfor %}</table>
+
+  <h2>Per-engineer resolved complaints</h2>
+  <table>{% for e in m.per_engineer_resolved %}
+    <tr><td>{{ e.name }} ({{ e.employee_id }})</td><td>{{ e.resolved_count }}</td></tr>
+  {% empty %}<tr><td class="muted" colspan="2">None.</td></tr>{% endfor %}</table>
+</body>
+</html>

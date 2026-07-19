@@ -23,6 +23,28 @@ uv run python manage.py seed_demo   # optional: 90 days of demo data
 uv run python manage.py runserver
 ```
 
+## AI features (Phase 2)
+
+The app talks to any OpenAI-compatible LLM endpoint — pick one via `.env`:
+
+| Setup | .env |
+|---|---|
+| Bundled Ollama container (default) | nothing to change |
+| Own vLLM server | `LLM_BASE_URL=http://your-host:8000/v1`, `LLM_MODEL=...` |
+| Hospital LLM gateway | `LLM_BASE_URL=https://llm.hospital.example/v1`, `LLM_API_KEY=...` |
+
+First start with the bundled container, pull the default model once:
+
+    docker compose up -d ollama
+    docker compose exec ollama ollama pull llama3.2:3b
+
+Everything degrades gracefully with no LLM: reports generate without the
+narrative, risk scores compute without explanations.
+
+Privacy note: prompts include complaint and remark free-text. The default
+bundled Ollama runs locally, so nothing leaves your deployment — but if you
+point `LLM_BASE_URL` at an external endpoint, that text is sent there.
+
 ## Demo accounts & login
 
 `seed_demo` creates ready-to-use accounts so you can log in and explore the UI
