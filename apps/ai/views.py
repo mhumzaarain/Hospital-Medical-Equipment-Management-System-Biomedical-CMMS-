@@ -1,11 +1,13 @@
 from django.contrib import messages
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
 from django.views.generic import View
 
 from apps.accounts.mixins import RoleRequiredMixin
 from apps.accounts.models import Roles
+from apps.equipment.models import Equipment
+from apps.maintenance.models import WorkOrder
 
-from .models import ManualStatus, ServiceManual
+from .models import AssistantMessage, AssistantRole, ManualStatus, ServiceManual
 
 ENGINEER_ROLES = (Roles.ENGINEER, Roles.ADMIN)
 
@@ -46,3 +48,47 @@ class ManualListView(RoleRequiredMixin, View):
         tasks.process_manual.defer(manual_id=manual.id)
         messages.success(request, f"{title} uploaded — processing in background.")
         return redirect("manual_list")
+
+
+def _assistant_context(request, equipment_id):
+    equipment = get_object_or_404(Equipment, pk=equipment_id)
+    work_order = None
+    wo_id = request.GET.get("wo")
+    if wo_id:
+        work_order = get_object_or_404(WorkOrder, pk=wo_id, equipment=equipment)
+    return {
+        "equipment": equipment,
+        "work_order": work_order,
+        "chat_messages": equipment.assistant_messages.select_related("user"),
+    }
+
+
+class AssistantMessagesView(RoleRequiredMixin, View):
+    allowed_roles = ENGINEER_ROLES
+
+    def get(self, request, equipment_id):
+        return render(
+            request,
+            "ai/_assistant_messages.html",
+            _assistant_context(request, equipment_id),
+        )
+
+
+class AssistantSendView(RoleRequiredMixin, View):
+    allowed_roles = ENGINEER_ROLES
+
+    def post(self, request, equipment_id):
+        from . import tasks
+
+        context = _assistant_context(request, equipment_id)
+        content = request.POST.get("content", "").strip()
+        if content:
+            message = AssistantMessage.objects.create(
+                equipment=context["equipment"],
+                work_order=context["work_order"],
+                user=request.user,
+                role=AssistantRole.USER,
+                content=content,
+            )
+            tasks.answer_assistant_chat.defer(message_id=message.id)
+        return render(request, "ai/_assistant_messages.html", context)

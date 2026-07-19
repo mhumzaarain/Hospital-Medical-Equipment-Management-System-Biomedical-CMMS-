@@ -102,4 +102,5 @@
     {% empty %}<p class="text-sm text-slate-500 dark:text-slate-400">No repairs recorded.</p>{% endfor %}
   </div>
 </div>
+{% include "ai/_assistant_panel.html" with equipment=equipment %}
 {% endblock %}

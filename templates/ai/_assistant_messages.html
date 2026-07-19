@@ -1,0 +1,20 @@
+<div id="assistant-thread" class="space-y-3">
+  {% for m in chat_messages %}
+    {% if m.role == "user" %}
+      <div class="rounded-lg border border-slate-100 bg-slate-50 p-3 text-sm dark:border-slate-800 dark:bg-slate-800/60">
+        <span class="text-xs text-slate-500 dark:text-slate-400">{{ m.user.get_full_name|default:m.user.username }}</span>
+        <p>{{ m.content }}</p>
+      </div>
+    {% else %}
+      <div class="rounded-lg border border-sky-100 bg-sky-50 p-3 text-sm dark:border-sky-500/30 dark:bg-sky-500/10">
+        <p>{{ m.content|linebreaksbr }}</p>
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Advisory only — verify against the service manual before acting.</p>
+      </div>
+    {% endif %}
+  {% empty %}
+    <p class="text-sm text-slate-500 dark:text-slate-400">Ask about this device — the assistant answers from its service manual and repair history.</p>
+  {% endfor %}
+  {% if chat_messages.last.role == "user" %}
+    <div class="rounded-lg border border-sky-100 bg-sky-50 p-3 text-sm text-slate-500 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-slate-400">Thinking…</div>
+  {% endif %}
+</div>
