@@ -1,0 +1,32 @@
+# VCS & CI
+.git
+.github
+
+# Local environments & editors
+.env
+.venv
+.vscode
+.claude
+.superpowers
+
+# Caches
+__pycache__
+**/__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Runtime artifacts (mounted as volumes, never baked in)
+media
+staticfiles
+
+# Not needed inside the image
+bin
+docs
+tests
+conftest.py
+practic.ipynb
+docker-compose.yml
+Dockerfile
+nginx.conf
