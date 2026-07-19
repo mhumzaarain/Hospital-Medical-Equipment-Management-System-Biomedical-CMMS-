@@ -1,14 +1,17 @@
 import json
+import re
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404, render
+from django.http import FileResponse, Http404
+from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from apps.ai import services as ai_services
 
 from . import metrics
+from .models import MonthlyReport
 
 
 @login_required
@@ -79,4 +82,51 @@ def engineer_resolved(request, user_id):
             "rows": rows,
             "total": len(rows),
         },
+    )
+
+
+def _require_engineer_or_admin(user):
+    if not user.is_engineer_or_admin:
+        raise PermissionDenied
+
+
+@login_required
+def report_list(request):
+    _require_engineer_or_admin(request.user)
+    return render(
+        request,
+        "reports/report_list.html",
+        {"reports": MonthlyReport.objects.all()},
+    )
+
+
+@login_required
+def report_generate(request):
+    _require_engineer_or_admin(request.user)
+    from django.contrib import messages
+
+    from apps.ai import tasks
+
+    month = request.POST.get("month", "")
+    if not re.fullmatch(r"\d{4}-\d{2}", month):
+        messages.error(request, "Pick a month first.")
+        return redirect("report_list")
+    tasks.generate_monthly_report.defer(
+        month_iso=month, requested_by_id=request.user.id
+    )
+    messages.success(request, f"Report for {month} queued — refresh in a minute.")
+    return redirect("report_list")
+
+
+@login_required
+def report_download(request, pk):
+    _require_engineer_or_admin(request.user)
+    report = get_object_or_404(MonthlyReport, pk=pk)
+    if not report.pdf:
+        raise Http404
+    return FileResponse(
+        report.pdf.open("rb"),
+        as_attachment=True,
+        filename=f"monthly-{report.month:%Y-%m}.pdf",
+        content_type="application/pdf",
     )
